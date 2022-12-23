@@ -12,6 +12,8 @@
 
 #include <iostream>
 
+using namespace std;
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -23,7 +25,7 @@ const unsigned int SCR_WIDTH = 1920; // escolham as vossa resoluçao de ecra !!!
 const unsigned int SCR_HEIGHT = 1080;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 2.0f));
+Camera camera(glm::vec3(5.5f, 10.5f, 30.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -34,6 +36,8 @@ float lastFrame = 0.0f;
 
 // cube position
 glm::vec3 cubePos(0.0f, 0.0f, 0.0f);
+
+glm::vec3 cubeColor(0.0f, 1.0f, 0.0f);
 
 glm::mat4 projection = glm::mat4(1.0f);
 glm::mat4 view = glm::mat4(1.0f);
@@ -132,6 +136,72 @@ int main()
         -0.5f,  0.5f,  0.5f,     0.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,     0.0f, 1.0f
     };
+    glm::vec3 cubePositions[] = {
+        glm::vec3(0.0f,  0.0f,  0.0f), // base
+        glm::vec3(1.0f,  0.0f,  0.0f),
+        glm::vec3(2.0f,  0.0f,  0.0f),
+        glm::vec3(3.0f,  0.0f,  0.0f),
+        glm::vec3(4.0f,  0.0f,  0.0f),
+        glm::vec3(5.0f,  0.0f,  0.0f),
+        glm::vec3(6.0f,  0.0f,  0.0f),
+        glm::vec3(7.0f,  0.0f,  0.0f),
+        glm::vec3(8.0f,  0.0f,  0.0f),
+        glm::vec3(9.0f,  0.0f,  0.0f),
+        glm::vec3(10.0f,  0.0f,  0.0f),
+        glm::vec3(11.0f,  0.0f,  0.0f),
+
+        glm::vec3(11.0f,  1.0f,  0.0f), // coluna direita
+        glm::vec3(11.0f,  2.0f,  0.0f),
+        glm::vec3(11.0f,  3.0f,  0.0f),
+        glm::vec3(11.0f,  4.0f,  0.0f),
+        glm::vec3(11.0f,  5.0f,  0.0f),
+        glm::vec3(11.0f,  6.0f,  0.0f),
+        glm::vec3(11.0f,  7.0f,  0.0f),
+        glm::vec3(11.0f,  8.0f,  0.0f),
+        glm::vec3(11.0f,  9.0f,  0.0f),
+        glm::vec3(11.0f,  10.0f,  0.0f),
+        glm::vec3(11.0f,  11.0f,  0.0f),
+        glm::vec3(11.0f,  12.0f,  0.0f),
+        glm::vec3(11.0f,  13.0f,  0.0f),
+        glm::vec3(11.0f,  14.0f,  0.0f),
+        glm::vec3(11.0f,  15.0f,  0.0f),
+        glm::vec3(11.0f,  16.0f,  0.0f),
+        glm::vec3(11.0f,  17.0f,  0.0f),
+        glm::vec3(11.0f,  18.0f,  0.0f),
+
+        glm::vec3(11.0f,  19.0f,  0.0f), // top
+        glm::vec3(10.0f,  19.0f,  0.0f),
+        glm::vec3(9.0f,  19.0f,  0.0f),
+        glm::vec3(8.0f,  19.0f,  0.0f),
+        glm::vec3(7.0f,  19.0f,  0.0f),
+        glm::vec3(6.0f,  19.0f,  0.0f),
+        glm::vec3(5.0f,  19.0f,  0.0f),
+        glm::vec3(4.0f,  19.0f,  0.0f),
+        glm::vec3(3.0f,  19.0f,  0.0f),
+        glm::vec3(2.0f,  19.0f,  0.0f),
+        glm::vec3(1.0f,  19.0f,  0.0f),
+        glm::vec3(0.0f,  19.0f,  0.0f),
+
+        glm::vec3(0.0f,  18.0f,  0.0f), // coluna esquerda
+        glm::vec3(0.0f,  17.0f,  0.0f),
+        glm::vec3(0.0f,  16.0f,  0.0f),
+        glm::vec3(0.0f,  15.0f,  0.0f),
+        glm::vec3(0.0f,  14.0f,  0.0f),
+        glm::vec3(0.0f,  13.0f,  0.0f),
+        glm::vec3(0.0f,  12.0f,  0.0f),
+        glm::vec3(0.0f,  11.0f,  0.0f),
+        glm::vec3(0.0f,  10.0f,  0.0f),
+        glm::vec3(0.0f,  9.0f,  0.0f),
+        glm::vec3(0.0f,  8.0f,  0.0f),
+        glm::vec3(0.0f,  7.0f,  0.0f),
+        glm::vec3(0.0f,  6.0f,  0.0f),
+        glm::vec3(0.0f,  5.0f,  0.0f),
+        glm::vec3(0.0f,  4.0f,  0.0f),
+        glm::vec3(0.0f,  3.0f,  0.0f),
+        glm::vec3(0.0f,  2.0f,  0.0f),
+        glm::vec3(0.0f,  1.0f,  0.0f)
+    };
+    //cout << size(cubePositions) << endl;
 
     unsigned int VBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
@@ -175,18 +245,23 @@ int main()
 
         //-----------------------------------------cube-------------------------------------------------------
         basicShader.use();
-        basicShader.setVec3("color", 0.0f, 0.0f, 1.0f);
+        //basicShader.setVec3("color", cubeColor);
         basicShader.setMat4("projection", projection);
         basicShader.setMat4("view", view);
-        model = glm::translate(glm::mat4(1.0f), cubePos);
-        model = glm::scale(model, glm::vec3(1.0f));
-        basicShader.setMat4("model", model);
+        for (unsigned int i = 0; i < size(cubePositions); i++) { // 360/60
+            //cubeColor.x = (sin(glfwGetTime() * 2.0f) + 1) /2;
+            //cubeColor.y = (sin(glfwGetTime() * 0.7f) + 1) /2;
+            //cubeColor.z = (sin(glfwGetTime() * 1.3f) + 1) /2;
+            basicShader.setVec3("color", cubeColor);
+            model = glm::translate(glm::mat4(1.0f), cubePositions[i]);
+            basicShader.setMat4("model", model);
+            // bind diffuse map
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, normalT);
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, normalT);
-
-        glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+            glBindVertexArray(cubeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -211,19 +286,19 @@ void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.ProcessKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.ProcessKeyboard(RIGHT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camera.ProcessKeyboard(UPWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime + 0.05);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.ProcessKeyboard(BACKWARD, deltaTime + 0.05);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.ProcessKeyboard(LEFT, deltaTime + 0.05);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.ProcessKeyboard(RIGHT, deltaTime + 0.05);
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camera.ProcessKeyboard(UPWARD, deltaTime + 0.05);
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime + 0.05);
 
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) cubePos.z -= speed;
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) cubePos.z += speed;
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) cubePos.x -= speed;
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) cubePos.x += speed;
-    if (glfwGetKey(window, GLFW_KEY_KP_0) == GLFW_PRESS) cubePos.y -= speed;
-    if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS) cubePos.y += speed;
+    //if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) cubePos.z -= speed;
+    //if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) cubePos.z += speed;
+    //if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) cubePos.x -= speed;
+    //if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) cubePos.x += speed;
+    //if (glfwGetKey(window, GLFW_KEY_KP_0) == GLFW_PRESS) cubePos.y -= speed;
+    //if (glfwGetKey(window, GLFW_KEY_KP_1) == GLFW_PRESS) cubePos.y += speed;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
