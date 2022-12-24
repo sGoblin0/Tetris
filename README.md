@@ -1,7 +1,10 @@
 # Tetris
 
+## Até ao momento é isto:
+![status](./textures/status.png "status")
+
 ## Expetativa
-![screenshot](./textures/expectations.jpeg "screenshot")
+![expectation](./textures/expectations.jpeg "expectation")
 
 ## Peças
-![screenshot](./textures/pieces.png "screenshot")
+![pieces](./textures/pieces.png "pieces")
