@@ -90,7 +90,7 @@ int main()
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    float vertices[] = {
+    float vertices[] = { // CUBE
         //posiçao (x,y,z)        texture box
         -0.5f, -0.5f, -0.5f,     1.0f, 0.0f, // -z
          0.5f, -0.5f, -0.5f,     0.0f, 0.0f,
@@ -134,7 +134,7 @@ int main()
         -0.5f,  0.5f,  0.5f,     0.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,     0.0f, 1.0f
     };
-    glm::vec3 cubePositions[] = {
+    glm::vec3 cubePositions[] = { // POSITIONS OF CUBES IN FRAME
         glm::vec3(0.0f,  0.0f,  0.0f), // base
         glm::vec3(1.0f,  0.0f,  0.0f),
         glm::vec3(2.0f,  0.0f,  0.0f),
@@ -203,9 +203,9 @@ int main()
         glm::vec3(0.0f,  4.0f,  0.0f),
         glm::vec3(0.0f,  3.0f,  0.0f),
         glm::vec3(0.0f,  2.0f,  0.0f),
-        glm::vec3(0.0f,  1.0f,  0.0f)
+        glm::vec3(0.0f,  1.0f,  0.0f),
     };
-    glm::vec3 cubeColors[] = {
+    glm::vec3 cubeColors[] = { //COLORS FOR THE FRAME
         glm::vec3(1.0f,  0.0f,  0.0f), // base
         glm::vec3(1.0f,  0.0909f,  0.0f),
         glm::vec3(1.0f,  0.1818f,  0.0f),
@@ -276,6 +276,48 @@ int main()
         glm::vec3(1.0f,  0.0f,  0.1818f),
         glm::vec3(1.0f,  0.0f,  0.0909f),
     };
+    glm::vec3 pieceL[] = {
+        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(0.0f,  1.0f,  0.0f),
+        glm::vec3(0.0f,  2.0f,  0.0f),
+        glm::vec3(1.0f,  0.0f,  0.0f),
+    };
+    glm::vec3 pieceI[] = {
+        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(0.0f,  1.0f,  0.0f),
+        glm::vec3(0.0f,  2.0f,  0.0f),
+        glm::vec3(0.0f,  3.0f,  0.0f),
+    };
+    glm::vec3 pieceSquare[] = {
+        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(0.0f,  1.0f,  0.0f),
+        glm::vec3(1.0f,  0.0f,  0.0f),
+        glm::vec3(1.0f,  1.0f,  0.0f),
+    };
+    glm::vec3 pieceLopposite[] = {
+        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(0.0f,  1.0f,  0.0f),
+        glm::vec3(0.0f,  2.0f,  0.0f),
+        glm::vec3(1.0f,  2.0f,  0.0f),
+    };
+    glm::vec3 pieceZ[] = {
+        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(0.0f,  1.0f,  0.0f),
+        glm::vec3(1.0f,  1.0f,  0.0f),
+        glm::vec3(1.0f,  2.0f,  0.0f),
+    };
+    glm::vec3 pieceZopposite[] = {
+        glm::vec3(1.0f,  0.0f,  0.0f),
+        glm::vec3(1.0f,  1.0f,  0.0f),
+        glm::vec3(0.0f,  1.0f,  0.0f),
+        glm::vec3(0.0f,  2.0f,  0.0f),
+    };
+    glm::vec3 pieceDick[] = {
+        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(0.0f,  1.0f,  0.0f),
+        glm::vec3(0.0f,  2.0f,  0.0f),
+        glm::vec3(1.0f,  1.0f,  0.0f),
+    };
 
     //cout << "Pos: " << size(cubePositions) << endl;
     //cout << "Cor: " << size(cubeColors) << endl;
@@ -286,17 +328,14 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glBindVertexArray(cubeVAO);
+    // vertices position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // texture coord attribute 1
+    // texture coordinates
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    unsigned int normalT = loadTexture("textures/blockNormal.png");
-    //unsigned int normalT = loadTexture("textures/blockTex.png");
-
-    basicShader.use();
-    basicShader.setInt("texture1", 1);
+    unsigned int texture = loadTexture("textures/blockBW.png");
 
     // render loop
     // -----------
@@ -318,7 +357,9 @@ int main()
         // ------
         glClearColor(0.53f, 0.81f, 0.98f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
+
+        glBindTexture(GL_TEXTURE_2D, texture);
+
         projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         view = camera.GetViewMatrix();
 
@@ -327,23 +368,78 @@ int main()
         //basicShader.setVec3("color", cubeColor);
         basicShader.setMat4("projection", projection);
         basicShader.setMat4("view", view);
-        for (unsigned int i = 0; i < size(cubePositions); i++) { // 360/60
-            //cubeColor.x = (sin(glfwGetTime() * 2.0f) + 1) /2;
-            //cubeColor.y = (sin(glfwGetTime() * 0.7f) + 1) /2;
-            //cubeColor.z = (sin(glfwGetTime() * 1.3f) + 1) /2;
-            
+
+        for (unsigned int i = 0; i < size(cubePositions); i++) { // draw square frame
             basicShader.setVec3("color", cubeColors[i]);
             model = glm::translate(glm::mat4(1.0f), cubePositions[i]);
             basicShader.setMat4("model", model);
-            // bind diffuse map
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, normalT);
-
             glBindVertexArray(cubeVAO);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
-        // x cubos ----- 60º           x = 10        1/x = 0.1
-        // 60 cubos-----360º
+
+        for (unsigned int i = 0; i < size(pieceL); i++) { // draw L piece
+            basicShader.setVec3("color", 0.4196f, 0.55686f, 0.13725f);
+            model = glm::translate(glm::mat4(1.0f), pieceL[i]);
+            model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 0.0f));
+            basicShader.setMat4("model", model);
+            glBindVertexArray(cubeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
+        for (unsigned int i = 0; i < size(pieceLopposite); i++) { // draw L opposite piece
+            basicShader.setVec3("color", 0.941176f, 0.50196f, 0.50196f);
+            model = glm::translate(glm::mat4(1.0f), pieceLopposite[i]);
+            model = glm::translate(model, glm::vec3(-3.0f, 4.0f, 0.0f));
+            basicShader.setMat4("model", model);
+            glBindVertexArray(cubeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+        
+        for (unsigned int i = 0; i < size(pieceI); i++) { // draw I piece
+            basicShader.setVec3("color", 0.50196f, 0.50196f, 0.0f);
+            model = glm::translate(glm::mat4(1.0f), pieceI[i]);
+            model = glm::translate(model, glm::vec3(-3.0f, 8.0f, 0.0f));
+            basicShader.setMat4("model", model);
+            glBindVertexArray(cubeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
+        for (unsigned int i = 0; i < size(pieceSquare); i++) { // draw Square piece
+            basicShader.setVec3("color", 0.54509f, 0.27058f, 0.074509f);
+            model = glm::translate(glm::mat4(1.0f), pieceSquare[i]);
+            model = glm::translate(model, glm::vec3(-3.0f, 13.0f, 0.0f));
+            basicShader.setMat4("model", model);
+            glBindVertexArray(cubeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
+        for (unsigned int i = 0; i < size(pieceZ); i++) { // draw Z piece
+            basicShader.setVec3("color", 0.4f, 0.80392f, 0.66666f);
+            model = glm::translate(glm::mat4(1.0f), pieceZ[i]);
+            model = glm::translate(model, glm::vec3(-6.0f, 0.0f, 0.0f));
+            basicShader.setMat4("model", model);
+            glBindVertexArray(cubeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
+        for (unsigned int i = 0; i < size(pieceZopposite); i++) { // draw Z opposite piece
+            basicShader.setVec3("color", 0.372549f, 0.6196f, 0.62745f);
+            model = glm::translate(glm::mat4(1.0f), pieceZopposite[i]);
+            model = glm::translate(model, glm::vec3(-6.0f, 4.0f, 0.0f));
+            basicShader.setMat4("model", model);
+            glBindVertexArray(cubeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
+        for (unsigned int i = 0; i < size(pieceDick); i++) { // draw Dick piece
+            basicShader.setVec3("color", 0.48235f, 0.40784f, 0.93333f);
+            model = glm::translate(glm::mat4(1.0f), pieceDick[i]);
+            model = glm::translate(model, glm::vec3(-6.0f, 8.0f, 0.0f));
+            basicShader.setMat4("model", model);
+            glBindVertexArray(cubeVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+        
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
