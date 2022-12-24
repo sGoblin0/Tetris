@@ -22,13 +22,15 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 unsigned int loadTexture(const char* path);
+void rotations();
+void wait();
 
 // settings
 const unsigned int SCR_WIDTH = 1920; // escolham as vossa resoluçao de ecra !!!!!!!!!!!!!
 const unsigned int SCR_HEIGHT = 1080;
 
 // camera
-Camera camera(vec3(5.5f, 11.0f, 40.0f));
+Camera camera(vec3(5.5f, 11.0f, 30.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -370,7 +372,7 @@ int main()
         projection = perspective(radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         view = camera.GetViewMatrix();
 
-        //-----------------------------------------cube-------------------------------------------------------
+        //-----------------------------------------frame-------------------------------------------------------
         basicShader.use();
         basicShader.setMat4("projection", projection);
         basicShader.setMat4("view", view);
@@ -379,10 +381,10 @@ int main()
             basicShader.setVec3("color", cubeColors[i]);
             model = translate(mat4(1.0f), cubePositions[i]);
             basicShader.setMat4("model", model);
-            glBindVertexArray(cubeVAO);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
+        //-----------------------------------------pieces-------------------------------------------------------
         for (unsigned int i = 0; i < 4; i++){ // draw pieces
 
             if (option == 1){ // draw L piece
@@ -421,9 +423,7 @@ int main()
             }
 
             model = translate(model, piecePosition);
-            //model = rotate(model, radians(45.0f), vec3(0.0f, 0.0f, 1.0f));
             basicShader.setMat4("model", model);
-            glBindVertexArray(cubeVAO);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
         
@@ -458,12 +458,13 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camera.ProcessKeyboard(UPWARD, deltaTime + 0.05);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime + 0.05);
 
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) piecePosition.x -= speed;
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) piecePosition.x += speed;
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) piecePosition.y -= speed;
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) piecePosition.y += speed;
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) { piecePosition.x -= speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { piecePosition.x += speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) { piecePosition.y -= speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) { piecePosition.y += speed; wait(); }
 
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) { option = (rand() % 7) + 1; piecePosition.x = 5.0f; piecePosition.y = 19.0f; }
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) { option = (rand() % 7) + 1; piecePosition.x = 5.0f; piecePosition.y = 19.0f; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) { rotations(); wait(); }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -538,4 +539,14 @@ unsigned int loadTexture(char const* path)
     }
 
     return textureID;
+}
+
+void rotations() { // dont know how to rotate the focking pieces
+    //float aux = pieceDick[i].x;
+    //pieceDick[i].x = pieceDick[i].y;
+    //pieceDick[i].y = aux;
+}
+
+void wait() {
+    glfwWaitEventsTimeout(0.3);
 }
