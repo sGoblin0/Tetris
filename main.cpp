@@ -51,7 +51,6 @@ mat4 model = mat4(1.0f);
 float speed = 1.0f;
 int option = (rand() % 7) + 1;
 
-
 int main()
 {
     // glfw: initialize and configure
@@ -356,8 +355,6 @@ int main()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        bool R = false, G = true, B = false;
-
         // input
         // -----
         processInput(window);
@@ -369,6 +366,8 @@ int main()
 
         glBindTexture(GL_TEXTURE_2D, texture);
 
+        // mvp
+        // ----
         projection = perspective(radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         view = camera.GetViewMatrix();
 
@@ -381,52 +380,53 @@ int main()
             basicShader.setVec3("color", cubeColors[i]);
             model = translate(mat4(1.0f), cubePositions[i]);
             basicShader.setMat4("model", model);
+            glBindVertexArray(cubeVAO);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
         //-----------------------------------------pieces-------------------------------------------------------
-        for (unsigned int i = 0; i < 4; i++){ // draw pieces
+        for (unsigned int i = 0; i < 4; i++) { // draw pieces
 
-            if (option == 1){ // draw L piece
+            if (option == 1) { // draw L piece
                 basicShader.setVec3("color", 0.4196f, 0.55686f, 0.13725f);
                 model = translate(mat4(1.0f), pieceL[i]);
             }
 
-            else if (option == 2){ // draw L opposite piece
+            else if (option == 2) { // draw L opposite piece
                 basicShader.setVec3("color", 0.941176f, 0.50196f, 0.50196f);
                 model = translate(mat4(1.0f), pieceLopposite[i]);
             }
 
-            else if (option == 3){ // draw I piece
+            else if (option == 3) { // draw I piece
                 basicShader.setVec3("color", 0.50196f, 0.50196f, 0.0f);
                 model = translate(mat4(1.0f), pieceI[i]);
             }
 
-            else if (option == 4){ // draw Square piece
+            else if (option == 4) { // draw Square piece
                 basicShader.setVec3("color", 0.54509f, 0.27058f, 0.074509f);
                 model = translate(mat4(1.0f), pieceSquare[i]);
             }
 
-            else if (option == 5){ // draw Z piece
+            else if (option == 5) { // draw Z piece
                 basicShader.setVec3("color", 0.4f, 0.80392f, 0.66666f);
                 model = translate(mat4(1.0f), pieceZ[i]);
             }
 
-            else if (option == 6){ // draw Z opposite piece
+            else if (option == 6) { // draw Z opposite piece
                 basicShader.setVec3("color", 0.372549f, 0.6196f, 0.62745f);
                 model = translate(mat4(1.0f), pieceZopposite[i]);
             }
 
-            else if (option == 7){ // draw Dick piece
+            else if (option == 7) { // draw Dick piece
                 basicShader.setVec3("color", 0.48235f, 0.40784f, 0.93333f);
                 model = translate(mat4(1.0f), pieceDick[i]);
             }
 
             model = translate(model, piecePosition);
             basicShader.setMat4("model", model);
+            glBindVertexArray(cubeVAO);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
-        
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -444,7 +444,6 @@ int main()
     glfwTerminate();
     return 0;
 }
-
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow* window)
@@ -458,15 +457,14 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camera.ProcessKeyboard(UPWARD, deltaTime + 0.05);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime + 0.05);
 
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) { piecePosition.x -= speed; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { piecePosition.x += speed; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) { piecePosition.y -= speed; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) { piecePosition.y += speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS && piecePosition.x > 1.0f) { piecePosition.x -= speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS && piecePosition.x < 10.0f) { piecePosition.x += speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && piecePosition.y > 1.0f) { piecePosition.y -= speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && piecePosition.y < 21.0f) { piecePosition.y += speed; wait(); }
 
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) { option = (rand() % 7) + 1; piecePosition.x = 5.0f; piecePosition.y = 19.0f; wait(); }
     if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) { rotations(); wait(); }
 }
-
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -494,7 +492,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
-
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ---------------------------------------------------------------------------------------------------------
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -540,13 +537,11 @@ unsigned int loadTexture(char const* path)
 
     return textureID;
 }
-
 void rotations() { // dont know how to rotate the focking pieces
     //float aux = pieceDick[i].x;
     //pieceDick[i].x = pieceDick[i].y;
     //pieceDick[i].y = aux;
 }
-
 void wait() {
     glfwWaitEventsTimeout(0.3);
 }
