@@ -25,7 +25,7 @@ const unsigned int SCR_WIDTH = 1920; // escolham as vossa resoluçao de ecra !!!
 const unsigned int SCR_HEIGHT = 1080;
 
 // camera
-Camera camera(glm::vec3(5.5f, 10.5f, 30.0f));
+Camera camera(glm::vec3(5.5f, 11.0f, 40.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -36,8 +36,6 @@ float lastFrame = 0.0f;
 
 // cube position
 glm::vec3 cubePos(0.0f, 0.0f, 0.0f);
-
-glm::vec3 cubeColor(0.0f, 1.0f, 0.0f);
 
 glm::mat4 projection = glm::mat4(1.0f);
 glm::mat4 view = glm::mat4(1.0f);
@@ -168,20 +166,26 @@ int main()
         glm::vec3(11.0f,  16.0f,  0.0f),
         glm::vec3(11.0f,  17.0f,  0.0f),
         glm::vec3(11.0f,  18.0f,  0.0f),
+        glm::vec3(11.0f,  19.0f,  0.0f),
+        glm::vec3(11.0f,  20.0f,  0.0f),
+        glm::vec3(11.0f,  21.0f,  0.0f),
 
-        glm::vec3(11.0f,  19.0f,  0.0f), // top
-        glm::vec3(10.0f,  19.0f,  0.0f),
-        glm::vec3(9.0f,  19.0f,  0.0f),
-        glm::vec3(8.0f,  19.0f,  0.0f),
-        glm::vec3(7.0f,  19.0f,  0.0f),
-        glm::vec3(6.0f,  19.0f,  0.0f),
-        glm::vec3(5.0f,  19.0f,  0.0f),
-        glm::vec3(4.0f,  19.0f,  0.0f),
-        glm::vec3(3.0f,  19.0f,  0.0f),
-        glm::vec3(2.0f,  19.0f,  0.0f),
-        glm::vec3(1.0f,  19.0f,  0.0f),
+        glm::vec3(11.0f,  22.0f,  0.0f), // top
+        glm::vec3(10.0f,  22.0f,  0.0f),
+        glm::vec3(9.0f,  22.0f,  0.0f),
+        glm::vec3(8.0f,  22.0f,  0.0f),
+        glm::vec3(7.0f,  22.0f,  0.0f),
+        glm::vec3(6.0f,  22.0f,  0.0f),
+        glm::vec3(5.0f,  22.0f,  0.0f),
+        glm::vec3(4.0f,  22.0f,  0.0f),
+        glm::vec3(3.0f,  22.0f,  0.0f),
+        glm::vec3(2.0f,  22.0f,  0.0f),
+        glm::vec3(1.0f,  22.0f,  0.0f),
+        glm::vec3(0.0f,  22.0f,  0.0f),
+
+        glm::vec3(0.0f,  21.0f,  0.0f),
+        glm::vec3(0.0f,  20.0f,  0.0f),
         glm::vec3(0.0f,  19.0f,  0.0f),
-
         glm::vec3(0.0f,  18.0f,  0.0f), // coluna esquerda
         glm::vec3(0.0f,  17.0f,  0.0f),
         glm::vec3(0.0f,  16.0f,  0.0f),
@@ -201,7 +205,80 @@ int main()
         glm::vec3(0.0f,  2.0f,  0.0f),
         glm::vec3(0.0f,  1.0f,  0.0f)
     };
-    //cout << size(cubePositions) << endl;
+    glm::vec3 cubeColors[] = {
+        glm::vec3(1.0f,  0.0f,  0.0f), // base
+        glm::vec3(1.0f,  0.0909f,  0.0f),
+        glm::vec3(1.0f,  0.1818f,  0.0f),
+        glm::vec3(1.0f,  0.2727f,  0.0f),
+        glm::vec3(1.0f,  0.3636f,  0.0f),
+        glm::vec3(1.0f,  0.4545f,  0.0f),
+        glm::vec3(1.0f,  0.5454f,  0.0f),
+        glm::vec3(1.0f,  0.6363f,  0.0f),
+        glm::vec3(1.0f,  0.7272f,  0.0f),
+        glm::vec3(1.0f,  0.8181f,  0.0f),
+        glm::vec3(1.0f,  0.9090f,  0.0f),
+        glm::vec3(1.0f,  1.0f,  0.0f),
+
+        glm::vec3(0.9090f,  1.0f,  0.0f), // coluna direita
+        glm::vec3(0.8181f,  1.0f,  0.0f),
+        glm::vec3(0.7272f,  1.0f,  0.0f),
+        glm::vec3(0.6363f,  1.0f,  0.0f),
+        glm::vec3(0.5454f,  1.0f,  0.0f),
+        glm::vec3(0.4545f,  1.0f,  0.0f),
+        glm::vec3(0.3636f,  1.0f,  0.0f),
+        glm::vec3(0.2727f,  1.0f,  0.0f),
+        glm::vec3(0.1818f,  1.0f,  0.0f),
+        glm::vec3(0.0909f,  1.0f,  0.0f),
+        glm::vec3(0.0f,  1.0f,  0.0f),
+        glm::vec3(0.0f,  1.0f,  0.0909f),
+        glm::vec3(0.0f,  1.0f,  0.1818f),
+        glm::vec3(0.0f,  1.0f,  0.2717f),
+        glm::vec3(0.0f,  1.0f,  0.3636f),
+        glm::vec3(0.0f,  1.0f,  0.4545f),
+        glm::vec3(0.0f,  1.0f,  0.5454f),
+        glm::vec3(0.0f,  1.0f,  0.6363f),
+        glm::vec3(0.0f,  1.0f,  0.7272f),
+        glm::vec3(0.0f,  1.0f,  0.8181f),
+        glm::vec3(0.0f,  1.0f,  0.9090f),
+        
+        glm::vec3(0.0f,  1.0f,  1.0f), // top
+        glm::vec3(0.0f,  0.9090f,  1.0f),
+        glm::vec3(0.0f,  0.8181f,  1.0f),
+        glm::vec3(0.0f,  0.7272f,  1.0f),
+        glm::vec3(0.0f,  0.6363f,  1.0f),
+        glm::vec3(0.0f,  0.5454f,  1.0f),
+        glm::vec3(0.0f,  0.4545f,  1.0f),
+        glm::vec3(0.0f,  0.3636f,  1.0f),
+        glm::vec3(0.0f,  0.2727f,  1.0f),
+        glm::vec3(0.0f,  0.1818f,  1.0f),
+        glm::vec3(0.0f,  0.0909f,  1.0f),
+        glm::vec3(0.0f,  0.0f,  1.0f),
+
+        glm::vec3(0.0909f,  0.0f,  1.0f), // coluna esquerda
+        glm::vec3(0.1818f,  0.0f,  1.0f),
+        glm::vec3(0.2727f,  0.0f,  1.0f),
+        glm::vec3(0.3636f,  0.0f,  1.0f),
+        glm::vec3(0.4545f,  0.0f,  1.0f),
+        glm::vec3(0.5454f,  0.0f,  1.0f),
+        glm::vec3(0.6363f,  0.0f,  1.0f),
+        glm::vec3(0.7272f,  0.0f,  1.0f),
+        glm::vec3(0.8181f,  0.0f,  1.0f),
+        glm::vec3(0.9090f,  0.0f,  1.0f),
+        glm::vec3(1.0f,  0.0f,  1.0f),
+        glm::vec3(1.0f,  0.0f,  0.9090f),
+        glm::vec3(1.0f,  0.0f,  0.8181f),
+        glm::vec3(1.0f,  0.0f,  0.7272f),
+        glm::vec3(1.0f,  0.0f,  0.6363f),
+        glm::vec3(1.0f,  0.0f,  0.5454f),
+        glm::vec3(1.0f,  0.0f,  0.4545f),
+        glm::vec3(1.0f,  0.0f,  0.3636f),
+        glm::vec3(1.0f,  0.0f,  0.2727f),
+        glm::vec3(1.0f,  0.0f,  0.1818f),
+        glm::vec3(1.0f,  0.0f,  0.0909f),
+    };
+
+    //cout << "Pos: " << size(cubePositions) << endl;
+    //cout << "Cor: " << size(cubeColors) << endl;
 
     unsigned int VBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
@@ -231,6 +308,8 @@ int main()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        bool R = false, G = true, B = false;
+
         // input
         // -----
         processInput(window);
@@ -252,7 +331,8 @@ int main()
             //cubeColor.x = (sin(glfwGetTime() * 2.0f) + 1) /2;
             //cubeColor.y = (sin(glfwGetTime() * 0.7f) + 1) /2;
             //cubeColor.z = (sin(glfwGetTime() * 1.3f) + 1) /2;
-            basicShader.setVec3("color", cubeColor);
+            
+            basicShader.setVec3("color", cubeColors[i]);
             model = glm::translate(glm::mat4(1.0f), cubePositions[i]);
             basicShader.setMat4("model", model);
             // bind diffuse map
@@ -262,7 +342,8 @@ int main()
             glBindVertexArray(cubeVAO);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
-
+        // x cubos ----- 60º           x = 10        1/x = 0.1
+        // 60 cubos-----360º
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
