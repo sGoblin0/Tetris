@@ -128,13 +128,13 @@ int main()
     vec3 cubeColors[] = { vec3(1.0f,  0.0f,  0.0f),vec3(1.0f,  0.0909f,  0.0f),vec3(1.0f,  0.1818f,  0.0f),vec3(1.0f,  0.2727f,  0.0f),vec3(1.0f,  0.3636f,  0.0f),vec3(1.0f,  0.4545f,  0.0f),vec3(1.0f,  0.5454f,  0.0f),vec3(1.0f,  0.6363f,  0.0f),vec3(1.0f,  0.7272f,  0.0f),vec3(1.0f,  0.8181f,  0.0f),vec3(1.0f,  0.9090f,  0.0f),vec3(1.0f,  1.0f,  0.0f),vec3(0.9090f,  1.0f,  0.0f),vec3(0.8181f,  1.0f,  0.0f),vec3(0.7272f,  1.0f,  0.0f),vec3(0.6363f,  1.0f,  0.0f),vec3(0.5454f,  1.0f,  0.0f),vec3(0.4545f,  1.0f,  0.0f),vec3(0.3636f,  1.0f,  0.0f),vec3(0.2727f,  1.0f,  0.0f),vec3(0.1818f,  1.0f,  0.0f),vec3(0.0909f,  1.0f,  0.0f),vec3(0.0f,  1.0f,  0.0f),vec3(0.0f,  1.0f,  0.0909f),vec3(0.0f,  1.0f,  0.1818f),vec3(0.0f,  1.0f,  0.2717f),vec3(0.0f,  1.0f,  0.3636f),vec3(0.0f,  1.0f,  0.4545f),vec3(0.0f,  1.0f,  0.5454f),vec3(0.0f,  1.0f,  0.6363f),vec3(0.0f,  1.0f,  0.7272f),vec3(0.0f,  1.0f,  0.8181f),vec3(0.0f,  1.0f,  0.9090f),vec3(0.0f,  1.0f,  1.0f),vec3(0.0f,  0.9090f,  1.0f),vec3(0.0f,  0.8181f,  1.0f),vec3(0.0f,  0.7272f,  1.0f),vec3(0.0f,  0.6363f,  1.0f),vec3(0.0f,  0.5454f,  1.0f),vec3(0.0f,  0.4545f,  1.0f),vec3(0.0f,  0.3636f,  1.0f),vec3(0.0f,  0.2727f,  1.0f),vec3(0.0f,  0.1818f,  1.0f),vec3(0.0f,  0.0909f,  1.0f),vec3(0.0f,  0.0f,  1.0f),vec3(0.0909f,  0.0f,  1.0f),vec3(0.1818f,  0.0f,  1.0f),vec3(0.2727f,  0.0f,  1.0f),vec3(0.3636f,  0.0f,  1.0f),vec3(0.4545f,  0.0f,  1.0f),vec3(0.5454f,  0.0f,  1.0f),vec3(0.6363f,  0.0f,  1.0f),vec3(0.7272f,  0.0f,  1.0f),vec3(0.8181f,  0.0f,  1.0f),vec3(0.9090f,  0.0f,  1.0f),vec3(1.0f,  0.0f,  1.0f),vec3(1.0f,  0.0f,  0.9090f),vec3(1.0f,  0.0f,  0.8181f),vec3(1.0f,  0.0f,  0.7272f),vec3(1.0f,  0.0f,  0.6363f),vec3(1.0f,  0.0f,  0.5454f),vec3(1.0f,  0.0f,  0.4545f),vec3(1.0f,  0.0f,  0.3636f),vec3(1.0f,  0.0f,  0.2727f),vec3(1.0f,  0.0f,  0.1818f),vec3(1.0f,  0.0f,  0.0909f) };
 
     // other way of making the pieces
-    vec3 pieceL[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  2.0f,  0.0f), vec3(1.0f,  0.0f,  0.0f) };
-    vec3 pieceI[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  2.0f,  0.0f), vec3(0.0f,  3.0f,  0.0f) };
-    vec3 pieceSquare[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(1.0f,  0.0f,  0.0f), vec3(1.0f,  1.0f,  0.0f) };
-    vec3 pieceLopposite[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  2.0f,  0.0f), vec3(1.0f,  2.0f,  0.0f) };
-    vec3 pieceZ[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(1.0f,  1.0f,  0.0f), vec3(1.0f,  2.0f,  0.0f) };
-    vec3 pieceZopposite[] = { vec3(1.0f,  0.0f,  0.0f), vec3(1.0f,  1.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  2.0f,  0.0f) };
-    vec3 pieceDick[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  2.0f,  0.0f), vec3(1.0f,  1.0f,  0.0f) };
+    //vec3 pieceL[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  2.0f,  0.0f), vec3(1.0f,  0.0f,  0.0f) };
+    //vec3 pieceI[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  2.0f,  0.0f), vec3(0.0f,  3.0f,  0.0f) };
+    //vec3 pieceSquare[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(1.0f,  0.0f,  0.0f), vec3(1.0f,  1.0f,  0.0f) };
+    //vec3 pieceLopposite[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  2.0f,  0.0f), vec3(1.0f,  2.0f,  0.0f) };
+    //vec3 pieceZ[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(1.0f,  1.0f,  0.0f), vec3(1.0f,  2.0f,  0.0f) };
+    //vec3 pieceZopposite[] = { vec3(1.0f,  0.0f,  0.0f), vec3(1.0f,  1.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  2.0f,  0.0f) };
+    //vec3 pieceDick[] = { vec3(0.0f,  0.0f,  0.0f), vec3(0.0f,  1.0f,  0.0f), vec3(0.0f,  2.0f,  0.0f), vec3(1.0f,  1.0f,  0.0f) };
     
     unsigned int cubeVBO, cubeVAO, pieceDickVBO, pieceDickVAO, pieceLVBO, pieceLVAO, pieceLReverseVBO, pieceLReverseVAO, pieceIVBO, pieceIVAO, pieceSquareVBO, pieceSquareVAO, pieceZVBO, pieceZVAO, pieceZReverseVBO, pieceZReverseVAO;
     glGenVertexArrays(1, &cubeVAO);
