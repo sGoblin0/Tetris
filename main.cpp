@@ -1,4 +1,4 @@
-﻿#include <glad/glad.h>
+﻿#include <glad\glad.h>
 
 #include <GLFW/glfw3.h>
 
@@ -13,16 +13,21 @@
 #include <camera.h>
 
 #include <iostream>
+#include <list>
+
+#include "piecesCoord.h"
 
 using namespace std;
 using namespace glm;
+
+float M_PI = 3.14159265358979323846;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 unsigned int loadTexture(const char* path);
-void rotations();
+
 void wait();
 
 // settings
@@ -39,8 +44,6 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-// cube position
-vec3 piecePosition(5.0f, 19.0f, 0.0f);
 
 //MVP
 mat4 projection = mat4(1.0f);
@@ -49,11 +52,206 @@ mat4 model = mat4(1.0f);
 
 // helpful variables
 float speed = 1.0f;
-int option = (rand() % 7) + 1;
+//by comparing the next two variables, we can check if the piece number has changed
+int option; 
+int currentOption; 
 
+
+//piece spawn position
+vec3 pieceSpawnPosition(4.0f, 20.0f, 0.0f);
+
+
+
+
+typedef struct PIECE_BOARD {
+    vec2 pos; //position of the piece in the board
+	int index; //index of the piece (option)
+    vec3 coord[4]; //coordenates (position of cubes in relation the the center cube)
+}PIECE_BOARD;
+
+vector<PIECE_BOARD> allPiecesInMap; //10 x 22 (regras jogo)
+
+
+
+
+typedef struct PIECE{
+    vec3 position = vec3(4.0f, 20.0f, 0.0f); // current cube position
+    vec3 futurePosition = vec3(4.0f, 20.0f, 0.0f); //future cube position (after movement)
+    vec3 coord[4]; //coordenates (position of cubes in relation the the center cube)
+    int rot = 0; //rotation
+}PIECE;
+PIECE tmpPiece; //current piece
+
+
+
+
+//checks if any cube is going to collide with another (wall or pieces)
+bool checkColision(bool rotation = false) {
+    if (tmpPiece.position == tmpPiece.futurePosition && !rotation) return false; //no need to check for collision
+    for (int n = 0; n < 4; n++) { //for every cube of the piece
+        vec2 sum = vec2(tmpPiece.coord[n].x + tmpPiece.futurePosition.x, tmpPiece.coord[n].y + tmpPiece.futurePosition.y); //cube position after transladation
+        for (unsigned int i = 0; i < sizeof(cubePositions) / sizeof(vec3); i++) { //for every cube of the walls 
+            if (sum.x == cubePositions[i].x && sum.y == cubePositions[i].y) {
+                tmpPiece.futurePosition = tmpPiece.position; //colision, future location disregarded
+                return true;
+            }
+        }
+        for (unsigned int i = 0; i < allPiecesInMap.size(); i++) { //for every piece already on the board
+            for (unsigned int m = 0; m < 4; m++) { //for every cube of every piece already on the board
+                vec3 sumCubes = vec3(allPiecesInMap.at(i).pos, 0.0f) + allPiecesInMap.at(i).coord[m];
+                if (sum.x == sumCubes.x && sum.y == sumCubes.y) {
+                    tmpPiece.futurePosition = tmpPiece.position;
+                    return true;
+                }
+            }
+        }
+    }
+    tmpPiece.position = tmpPiece.futurePosition; //no colision, piece moves for future location
+    return false;
+}
+
+//----------------------------------------offsets-----------------------------------------
+
+vec3 offset01[] = {  //also works for 2>>1
+    vec3(-1.0f, 0.0f, 0.0f),
+    vec3(-1.0f, 1.0f, 0.0f),
+    vec3(0.0f, -2.0f, 0.0f),
+    vec3(-1.0f, -2.0f, 0.0f)
+};
+
+vec3 offset10[] = {  //also works for 1>>2
+    vec3(1.0f, 0.0f, 0.0f),
+    vec3(1.0f, -1.0f, 0.0f),
+    vec3(0.0f, 2.0f, 0.0f),
+    vec3(1.0f, 2.0f, 0.0f),
+};
+
+
+vec3 offset23[] = { //also works for 0 -> 3
+    vec3(1.0f, 0.0f, 0.0f),
+    vec3(1.0f, 1.0f, 0.0f),
+    vec3(0.0f, -2.0f, 0.0f),
+    vec3(1.0f, -2.0f, 0.0f)
+};
+
+vec3 offset32[] = {
+    vec3(-1.0f, 0.0f, 0.0f),
+    vec3(-1.0f, -1.0f, 0.0f),
+    vec3(0.0f, 2.0f, 0.0f),
+    vec3(-1.0f, -2.0f, 0.0f)
+};
+
+
+
+vec3 offsetNull[] = {
+    vec3(0.0f, 0.0f, 0.0f),
+    vec3(0.0f, 0.0f, 0.0f),
+    vec3(0.0f, 0.0f, 0.0f),
+    vec3(0.0f, 0.0f, 0.0f)
+};
+
+//check table for details
+vec3 offsetMatrix[8][4] = {
+    *offsetNull,* offset01,* offsetNull,* offset23,
+    *offset10, *offsetNull, *offset10, *offsetNull,
+    *offsetNull, *offset01, *offsetNull, *offset23,
+    *offset32, *offsetNull, *offset32, *offsetNull 
+};
+
+
+//-----------------------------------------------------------------------------------------
+
+
+//rotation from/to.
+//f.e rotation from spawn to clockwise: {0,1}
+//f.e roation from spawn to conterclockwise: {0,3}
+int rotation[] = { 0,0 };  
+
+//to rotate the pieces, and apply the offsets if necessary
+void rotationFunc(bool dir) { //dir == true -> counter clockwise
+    int x = 0;
+    rotation[0] = rotation[1];
+    if (dir) {
+        x = -1;
+        rotation[1]--;
+        if (rotation[1] < 0) rotation[1] = 3;	
+    }
+    else {
+        x = 1;
+        rotation[1]++;
+        if (rotation[1] > 3) rotation[1] = 0;
+    }
+    
+
+    //rotate all pieces 
+    for (int i = 0; i < 4; i++) {
+        mat4 tmpm = mat4(1.0f);
+        tmpm = rotate(tmpm, radians(x * 90.0f), vec3(0.0f, 0.0f, 1.0f));
+        tmpm = translate(tmpm, tmpPiece.coord[i]);
+        tmpPiece.coord[i] = vec4(tmpPiece.coord[i], 1.0f) * tmpm;
+        for (int i = 0; i < 4; i++) {
+            tmpPiece.coord[i].x = round(tmpPiece.coord[i].x);
+            tmpPiece.coord[i].y = round(tmpPiece.coord[i].y);
+        }
+        
+    }
+
+
+
+    //offsets
+    int offset_n = 0; //offset number | after 5 tries, doesn't rotate
+    while (true) {
+        if (offset_n > 3) {
+            offset_n = 0;
+            break; //exit loop       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        }
+        if (checkColision(true)) {
+            printf("It indeed has colition!!!!\n\n");
+            tmpPiece.futurePosition = tmpPiece.futurePosition + offsetMatrix[rotation[0], rotation[1]][offset_n]; //tries with offset
+            offset_n++;
+            continue;
+        }
+        //there was no colision or the offset worked
+        offset_n = 0;
+        tmpPiece.position = tmpPiece.futurePosition;
+        break; //exit loop
+    }
+}
+
+
+
+
+
+void randomPiece() {
+    
+    option =  (rand() % 7); //choose random piece (0-6)
+}
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//register the piece on the board
+void registerPiece() {
+    PIECE_BOARD tmp;
+    tmp.pos = tmpPiece.position;
+    tmp.index = option;
+    for (unsigned int i = 0; i < 4; i++) {
+        tmp.coord[i] = tmpPiece.coord[i];
+    }
+    
+	allPiecesInMap.push_back(tmp);
+    randomPiece();
+}
+
+
+void drawPiece() {
+
+}
 
 int main()
 {
+
+    srand(time(0));
+    
+    
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -67,7 +265,8 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
+    //GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -84,7 +283,7 @@ int main()
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
@@ -95,7 +294,7 @@ int main()
 
     // build and compile our shader zprogram
     // ------------------------------------
-    Shader basicShader("shaders/basic_vertex.vs", "shaders/basic_fragment.fs");
+    Shader basicShader("shaders/pieces.vs", "shaders/pieces.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -143,77 +342,7 @@ int main()
         -0.5f,  0.5f,  0.5f,     0.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,     0.0f, 1.0f
     };
-    vec3 cubePositions[] = { // POSITIONS OF CUBES IN FRAME
-        vec3(0.0f,  0.0f,  0.0f), // base
-        vec3(1.0f,  0.0f,  0.0f),
-        vec3(2.0f,  0.0f,  0.0f),
-        vec3(3.0f,  0.0f,  0.0f),
-        vec3(4.0f,  0.0f,  0.0f),
-        vec3(5.0f,  0.0f,  0.0f),
-        vec3(6.0f,  0.0f,  0.0f),
-        vec3(7.0f,  0.0f,  0.0f),
-        vec3(8.0f,  0.0f,  0.0f),
-        vec3(9.0f,  0.0f,  0.0f),
-        vec3(10.0f,  0.0f,  0.0f),
-        vec3(11.0f,  0.0f,  0.0f),
-
-        vec3(11.0f,  1.0f,  0.0f), // coluna direita
-        vec3(11.0f,  2.0f,  0.0f),
-        vec3(11.0f,  3.0f,  0.0f),
-        vec3(11.0f,  4.0f,  0.0f),
-        vec3(11.0f,  5.0f,  0.0f),
-        vec3(11.0f,  6.0f,  0.0f),
-        vec3(11.0f,  7.0f,  0.0f),
-        vec3(11.0f,  8.0f,  0.0f),
-        vec3(11.0f,  9.0f,  0.0f),
-        vec3(11.0f,  10.0f,  0.0f),
-        vec3(11.0f,  11.0f,  0.0f),
-        vec3(11.0f,  12.0f,  0.0f),
-        vec3(11.0f,  13.0f,  0.0f),
-        vec3(11.0f,  14.0f,  0.0f),
-        vec3(11.0f,  15.0f,  0.0f),
-        vec3(11.0f,  16.0f,  0.0f),
-        vec3(11.0f,  17.0f,  0.0f),
-        vec3(11.0f,  18.0f,  0.0f),
-        vec3(11.0f,  19.0f,  0.0f),
-        vec3(11.0f,  20.0f,  0.0f),
-        vec3(11.0f,  21.0f,  0.0f),
-
-        vec3(11.0f,  22.0f,  0.0f), // top
-        vec3(10.0f,  22.0f,  0.0f),
-        vec3(9.0f,  22.0f,  0.0f),
-        vec3(8.0f,  22.0f,  0.0f),
-        vec3(7.0f,  22.0f,  0.0f),
-        vec3(6.0f,  22.0f,  0.0f),
-        vec3(5.0f,  22.0f,  0.0f),
-        vec3(4.0f,  22.0f,  0.0f),
-        vec3(3.0f,  22.0f,  0.0f),
-        vec3(2.0f,  22.0f,  0.0f),
-        vec3(1.0f,  22.0f,  0.0f),
-        vec3(0.0f,  22.0f,  0.0f),
-
-        vec3(0.0f,  21.0f,  0.0f),
-        vec3(0.0f,  20.0f,  0.0f),
-        vec3(0.0f,  19.0f,  0.0f),
-        vec3(0.0f,  18.0f,  0.0f), // coluna esquerda
-        vec3(0.0f,  17.0f,  0.0f),
-        vec3(0.0f,  16.0f,  0.0f),
-        vec3(0.0f,  15.0f,  0.0f),
-        vec3(0.0f,  14.0f,  0.0f),
-        vec3(0.0f,  13.0f,  0.0f),
-        vec3(0.0f,  12.0f,  0.0f),
-        vec3(0.0f,  11.0f,  0.0f),
-        vec3(0.0f,  10.0f,  0.0f),
-        vec3(0.0f,  9.0f,  0.0f),
-        vec3(0.0f,  8.0f,  0.0f),
-        vec3(0.0f,  7.0f,  0.0f),
-        vec3(0.0f,  6.0f,  0.0f),
-        vec3(0.0f,  5.0f,  0.0f),
-        vec3(0.0f,  4.0f,  0.0f),
-        vec3(0.0f,  3.0f,  0.0f),
-        vec3(0.0f,  2.0f,  0.0f),
-        vec3(0.0f,  1.0f,  0.0f),
-    };
+    
     vec3 cubeColors[] = { //COLORS FOR THE FRAME
         vec3(1.0f,  0.0f,  0.0f), // base
         vec3(1.0f,  0.0909f,  0.0f),
@@ -249,7 +378,7 @@ int main()
         vec3(0.0f,  1.0f,  0.7272f),
         vec3(0.0f,  1.0f,  0.8181f),
         vec3(0.0f,  1.0f,  0.9090f),
-        
+
         vec3(0.0f,  1.0f,  1.0f), // top
         vec3(0.0f,  0.9090f,  1.0f),
         vec3(0.0f,  0.8181f,  1.0f),
@@ -285,48 +414,19 @@ int main()
         vec3(1.0f,  0.0f,  0.1818f),
         vec3(1.0f,  0.0f,  0.0909f),
     };
-    vec3 pieceL[] = {
-        vec3(0.0f,  0.0f,  0.0f),
-        vec3(0.0f,  1.0f,  0.0f),
-        vec3(0.0f,  2.0f,  0.0f),
-        vec3(1.0f,  0.0f,  0.0f),
+    
+
+
+    vec3 allPiecesColors[] = {
+        vec3(0.4196f, 0.55686f, 0.13725f),
+        vec3(0.941176f, 0.50196f, 0.50196f),
+        vec3(0.50196f, 0.50196f, 0.0f),
+        vec3(0.54509f, 0.27058f, 0.074509f),
+        vec3(0.4f, 0.80392f, 0.66666f),
+        vec3(0.372549f, 0.6196f, 0.62745f),
+        vec3(0.48235f, 0.40784f, 0.93333f)
     };
-    vec3 pieceI[] = {
-        vec3(0.0f,  0.0f,  0.0f),
-        vec3(0.0f,  1.0f,  0.0f),
-        vec3(0.0f,  2.0f,  0.0f),
-        vec3(0.0f,  3.0f,  0.0f),
-    };
-    vec3 pieceSquare[] = {
-        vec3(0.0f,  0.0f,  0.0f),
-        vec3(0.0f,  1.0f,  0.0f),
-        vec3(1.0f,  0.0f,  0.0f),
-        vec3(1.0f,  1.0f,  0.0f),
-    };
-    vec3 pieceLopposite[] = {
-        vec3(0.0f,  0.0f,  0.0f),
-        vec3(0.0f,  1.0f,  0.0f),
-        vec3(0.0f,  2.0f,  0.0f),
-        vec3(1.0f,  2.0f,  0.0f),
-    };
-    vec3 pieceZ[] = {
-        vec3(0.0f,  0.0f,  0.0f),
-        vec3(0.0f,  1.0f,  0.0f),
-        vec3(1.0f,  1.0f,  0.0f),
-        vec3(1.0f,  2.0f,  0.0f),
-    };
-    vec3 pieceZopposite[] = {
-        vec3(1.0f,  0.0f,  0.0f),
-        vec3(1.0f,  1.0f,  0.0f),
-        vec3(0.0f,  1.0f,  0.0f),
-        vec3(0.0f,  2.0f,  0.0f),
-    };
-    vec3 pieceDick[] = {
-        vec3(0.0f,  0.0f,  0.0f),
-        vec3(0.0f,  1.0f,  0.0f),
-        vec3(0.0f,  2.0f,  0.0f),
-        vec3(1.0f,  1.0f,  0.0f),
-    };
+
 
     //cout << "Pos: " << size(cubePositions) << endl;
     //cout << "Cor: " << size(cubeColors) << endl;
@@ -346,17 +446,25 @@ int main()
 
     unsigned int texture = loadTexture("textures/blockBW.png");
 
+    currentOption = -1;
+    randomPiece();
+
+  
+    
+
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        
         // per-frame time logic
         // --------------------
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        bool R = false, G = true, B = false;
+        bool R = false, G = true, B = false; //?????????????
 
         // input
         // -----
@@ -377,6 +485,11 @@ int main()
         basicShader.setMat4("projection", projection);
         basicShader.setMat4("view", view);
 
+
+        //check if future position is valid (if creates collision)
+        checkColision();
+      
+
         for (unsigned int i = 0; i < size(cubePositions); i++) { // draw square frame
             basicShader.setVec3("color", cubeColors[i]);
             model = translate(mat4(1.0f), cubePositions[i]);
@@ -384,49 +497,57 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
+
+
+
+
+
         //-----------------------------------------pieces-------------------------------------------------------
-        for (unsigned int i = 0; i < 4; i++){ // draw pieces
-
-            if (option == 1){ // draw L piece
-                basicShader.setVec3("color", 0.4196f, 0.55686f, 0.13725f);
-                model = translate(mat4(1.0f), pieceL[i]);
+        if (currentOption != option) { //new piece
+            for (int i = 0; i < 4; i++) {
+                printf("asdasd\n");
+                tmpPiece.coord[i] = allPieces[option][i];
             }
-
-            else if (option == 2){ // draw L opposite piece
-                basicShader.setVec3("color", 0.941176f, 0.50196f, 0.50196f);
-                model = translate(mat4(1.0f), pieceLopposite[i]);
-            }
-
-            else if (option == 3){ // draw I piece
-                basicShader.setVec3("color", 0.50196f, 0.50196f, 0.0f);
-                model = translate(mat4(1.0f), pieceI[i]);
-            }
-
-            else if (option == 4){ // draw Square piece
-                basicShader.setVec3("color", 0.54509f, 0.27058f, 0.074509f);
-                model = translate(mat4(1.0f), pieceSquare[i]);
-            }
-
-            else if (option == 5){ // draw Z piece
-                basicShader.setVec3("color", 0.4f, 0.80392f, 0.66666f);
-                model = translate(mat4(1.0f), pieceZ[i]);
-            }
-
-            else if (option == 6){ // draw Z opposite piece
-                basicShader.setVec3("color", 0.372549f, 0.6196f, 0.62745f);
-                model = translate(mat4(1.0f), pieceZopposite[i]);
-            }
-
-            else if (option == 7){ // draw Dick piece
-                basicShader.setVec3("color", 0.48235f, 0.40784f, 0.93333f);
-                model = translate(mat4(1.0f), pieceDick[i]);
-            }
-
-            model = translate(model, piecePosition);
-            basicShader.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            tmpPiece.position = pieceSpawnPosition;
+            currentOption = option;
         }
-        
+        for (unsigned int i = 0; i < 4; i++){ // draw current piece
+			basicShader.setVec3("color", allPiecesColors[option][0], allPiecesColors[option][1], allPiecesColors[option][2]);
+            
+
+            model = mat4(1.0f);
+            model = translate(model, tmpPiece.position); //current position of the center piece
+            model = translate(model, tmpPiece.coord[i]);//mount pieces together
+          
+            basicShader.setMat4("model", model);
+            //printf("%d\n", i);
+            //printf("%f %f %f %f\n\n", model[0][0], model[0][1], model[1][0], model[1][1]);
+            
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+
+            
+        }
+
+        //-----------------------------------------previous pieces-------------------------------------------------------
+        for (unsigned int i = 0; i < allPiecesInMap.size(); i++) { //draw previous pieces    
+            int index = allPiecesInMap.at(i).index; //piece number
+            vec3 pos = vec3(allPiecesInMap.at(i).pos, 0.0f); //coordenate of the piece
+            vec3* coord = allPiecesInMap.at(i).coord; //coordenates of the cubes in the piece
+            for (unsigned int n = 0; n < 4; n++) {
+                basicShader.setVec3("color", allPiecesColors[index][0], allPiecesColors[index][1], allPiecesColors[index][2]);
+                model = mat4(1.0f);
+                model = translate(model, pos); //current position of the center piece
+                model = translate(model, coord[n]);//mount pieces together
+
+                basicShader.setMat4("model", model);
+                //printf("%d\n", i);
+                //printf("%f %f %f %f\n\n", model[0][0], model[0][1], model[1][0], model[1][1]);
+
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+            }
+            
+            
+        }
         
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -445,6 +566,35 @@ int main()
     return 0;
 }
 
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+void debugFunction() {
+    printf("-------------------------------\n");
+    printf("Current relative position: \n");
+    for (unsigned int i = 0; i < 4; i++) {
+        printf("%f %f \n", tmpPiece.coord[i].x, tmpPiece.coord[i].y );
+
+    }
+
+    printf("Current position in map: \n");
+    for (unsigned int i = 0; i < 4; i++) {
+        printf("%f %f \n", tmpPiece.coord[i].x + tmpPiece.position.x, tmpPiece.coord[i].y + tmpPiece.position.y);
+
+    }
+    printf("----------------------------------\n");
+
+    for (unsigned int i = 0; i < 4; i++) {
+        if (tmpPiece.coord[i].x == -1.0f && tmpPiece.coord[i].y == -0.0f)
+            printf("Found it!!\n");
+        
+
+    }
+    for (unsigned int i = 0; i < 4; i++)
+        printf("type: %s\n", typeid(tmpPiece.coord[i].x).name())
+        ;
+}
+
+
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow* window)
@@ -458,13 +608,26 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camera.ProcessKeyboard(UPWARD, deltaTime + 0.05);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime + 0.05);
 
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) { piecePosition.x -= speed; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { piecePosition.x += speed; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) { piecePosition.y -= speed; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) { piecePosition.y += speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) { tmpPiece.futurePosition.x -= speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { tmpPiece.futurePosition.x += speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) { tmpPiece.futurePosition.y -= speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) { tmpPiece.futurePosition.y += speed; wait(); }
 
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) { option = (rand() % 7) + 1; piecePosition.x = 5.0f; piecePosition.y = 19.0f; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) { rotations(); wait(); }
+    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) { 
+        randomPiece(); wait();
+		
+    }
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS && option != 2) { //clockwise (option 2 == cube, ergo no rotation)
+        rotationFunc(false);
+        wait(); 
+    }
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS && option != 2) { //counter clockwise
+        rotationFunc(true);
+        wait(); 
+    }
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) debugFunction();
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) { registerPiece(); wait(); }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -541,12 +704,8 @@ unsigned int loadTexture(char const* path)
     return textureID;
 }
 
-void rotations() { // dont know how to rotate the focking pieces
-    //float aux = pieceDick[i].x;
-    //pieceDick[i].x = pieceDick[i].y;
-    //pieceDick[i].y = aux;
-}
+
 
 void wait() {
-    glfwWaitEventsTimeout(0.3);
+    glfwWaitEventsTimeout(0.7);
 }
