@@ -18,7 +18,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Arquivos de Origem</Filter>
     </ClCompile>
-    <ClCompile Include="dependencies\glad\src\glad.c">
+    <ClCompile Include="resources\glad.c">
       <Filter>Arquivos de Recurso</Filter>
     </ClCompile>
   </ItemGroup>
