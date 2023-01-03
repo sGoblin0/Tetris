@@ -7,12 +7,7 @@
 
 2.Press "O" to change piece
 
-3.Press "Enter" to start game (só move a peça para baixo p/ segundo)
-
-4.Press "Z" to rotate piece
-
-TO DO NEXT:
-	- Collision Detection; (muito dificil)
+3.Press "Z" & "X" to rotate piece
 
 ## Expetativa
 ![expectation](./textures/expectations.jpeg "expectation")
