@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <list>
+#include <thread>         // std::thread
 
 #include "piecesCoord.h"
 
@@ -69,7 +70,7 @@ typedef struct PIECE_BOARD {
     vec3 coord[4]; //coordenates (position of cubes in relation the the center cube)
 }PIECE_BOARD;
 
-vector<PIECE_BOARD> allPiecesInMap; //10 x 22 (regras jogo)
+vector<PIECE_BOARD> allPiecesInMap; //10 x 21 (regras jogo)
 
 
 
@@ -110,53 +111,7 @@ bool checkColision(bool rotation = false) {
     return false;
 }
 
-//----------------------------------------offsets-----------------------------------------
 
-vec3 offset01[] = {  //also works for 2>>1
-    vec3(-1.0f, 0.0f, 0.0f),
-    vec3(-1.0f, 1.0f, 0.0f),
-    vec3(0.0f, -2.0f, 0.0f),
-    vec3(-1.0f, -2.0f, 0.0f)
-};
-
-vec3 offset10[] = {  //also works for 1>>2
-    vec3(1.0f, 0.0f, 0.0f),
-    vec3(1.0f, -1.0f, 0.0f),
-    vec3(0.0f, 2.0f, 0.0f),
-    vec3(1.0f, 2.0f, 0.0f),
-};
-
-
-vec3 offset23[] = { //also works for 0 -> 3
-    vec3(1.0f, 0.0f, 0.0f),
-    vec3(1.0f, 1.0f, 0.0f),
-    vec3(0.0f, -2.0f, 0.0f),
-    vec3(1.0f, -2.0f, 0.0f)
-};
-
-vec3 offset32[] = {
-    vec3(-1.0f, 0.0f, 0.0f),
-    vec3(-1.0f, -1.0f, 0.0f),
-    vec3(0.0f, 2.0f, 0.0f),
-    vec3(-1.0f, -2.0f, 0.0f)
-};
-
-
-
-vec3 offsetNull[] = {
-    vec3(0.0f, 0.0f, 0.0f),
-    vec3(0.0f, 0.0f, 0.0f),
-    vec3(0.0f, 0.0f, 0.0f),
-    vec3(0.0f, 0.0f, 0.0f)
-};
-
-//check table for details
-vec3 offsetMatrix[8][4] = {
-    *offsetNull,* offset01,* offsetNull,* offset23,
-    *offset10, *offsetNull, *offset10, *offsetNull,
-    *offsetNull, *offset01, *offsetNull, *offset23,
-    *offset32, *offsetNull, *offset32, *offsetNull 
-};
 
 
 //-----------------------------------------------------------------------------------------
@@ -223,7 +178,6 @@ void rotationFunc(bool dir) { //dir == true -> counter clockwise
 
 
 void randomPiece() {
-    
     option =  (rand() % 7); //choose random piece (0-6)
 }
 
@@ -242,15 +196,50 @@ void registerPiece() {
 }
 
 
-void drawPiece() {
+#include <chrono>
+#include <thread>
+#include <mutex>
+
+
+
+std::thread moveThread;
+
+
+std::mutex mtx;
+
+//std::unique_lock<std::mutex> lck(mtx, std::try_to_lock);
+//bool gotLock = lck.owns_lock();
+bool gotLock = true;
+
+bool threads = true;
+bool moving = false;
+void movePieceDown() {
+    while (threads) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(700));
+        while(true){
+            if (mtx.try_lock()) break;
+        }
+        gotLock = true;
+        //gotLock = true;
+        tmpPiece.futurePosition.y = tmpPiece.futurePosition.y - 1.0f;
+        if ((tmpPiece.position - tmpPiece.futurePosition == vec3(0.0f, 1.0f, 0.0f)) && checkColision()) registerPiece();
+        mtx.unlock();
+        gotLock = false;
+    }   
 
 }
+
+
+
+
+
 
 int main()
 {
 
     srand(time(0));
-    
+   
+
     
     // glfw: initialize and configure
     // ------------------------------
@@ -265,8 +254,8 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
-    //GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
+    //GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -297,135 +286,7 @@ int main()
     Shader basicShader("shaders/pieces.vs", "shaders/pieces.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    float vertices[] = { // CUBE
-        //posiçao (x,y,z)        texture box
-        -0.5f, -0.5f, -0.5f,     1.0f, 0.0f, // -z
-         0.5f, -0.5f, -0.5f,     0.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,     0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,     0.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,     1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,     1.0f, 0.0f,
-
-        -0.5f, -0.5f,  0.5f,     0.0f, 0.0f, // +z
-         0.5f, -0.5f,  0.5f,     1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,     1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,     1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,     0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,     0.0f, 0.0f,
-
-        -0.5f,  0.5f,  0.5f,     1.0f, 1.0f,// -x
-        -0.5f,  0.5f, -0.5f,     0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,     0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,     0.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,     1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,     1.0f, 1.0f,
-
-         0.5f,  0.5f,  0.5f,     0.0f, 1.0f, // +x
-         0.5f,  0.5f, -0.5f,     1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,     1.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,     1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,     0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,     0.0f, 1.0f,
-
-        -0.5f, -0.5f, -0.5f,     0.0f, 1.0f, // -y
-         0.5f, -0.5f, -0.5f,     1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,     1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,     1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,     0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,     0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,     0.0f, 1.0f, // +y
-         0.5f,  0.5f, -0.5f,     1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,     1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,     1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,     0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,     0.0f, 1.0f
-    };
     
-    vec3 cubeColors[] = { //COLORS FOR THE FRAME
-        vec3(1.0f,  0.0f,  0.0f), // base
-        vec3(1.0f,  0.0909f,  0.0f),
-        vec3(1.0f,  0.1818f,  0.0f),
-        vec3(1.0f,  0.2727f,  0.0f),
-        vec3(1.0f,  0.3636f,  0.0f),
-        vec3(1.0f,  0.4545f,  0.0f),
-        vec3(1.0f,  0.5454f,  0.0f),
-        vec3(1.0f,  0.6363f,  0.0f),
-        vec3(1.0f,  0.7272f,  0.0f),
-        vec3(1.0f,  0.8181f,  0.0f),
-        vec3(1.0f,  0.9090f,  0.0f),
-        vec3(1.0f,  1.0f,  0.0f),
-
-        vec3(0.9090f,  1.0f,  0.0f), // coluna direita
-        vec3(0.8181f,  1.0f,  0.0f),
-        vec3(0.7272f,  1.0f,  0.0f),
-        vec3(0.6363f,  1.0f,  0.0f),
-        vec3(0.5454f,  1.0f,  0.0f),
-        vec3(0.4545f,  1.0f,  0.0f),
-        vec3(0.3636f,  1.0f,  0.0f),
-        vec3(0.2727f,  1.0f,  0.0f),
-        vec3(0.1818f,  1.0f,  0.0f),
-        vec3(0.0909f,  1.0f,  0.0f),
-        vec3(0.0f,  1.0f,  0.0f),
-        vec3(0.0f,  1.0f,  0.0909f),
-        vec3(0.0f,  1.0f,  0.1818f),
-        vec3(0.0f,  1.0f,  0.2717f),
-        vec3(0.0f,  1.0f,  0.3636f),
-        vec3(0.0f,  1.0f,  0.4545f),
-        vec3(0.0f,  1.0f,  0.5454f),
-        vec3(0.0f,  1.0f,  0.6363f),
-        vec3(0.0f,  1.0f,  0.7272f),
-        vec3(0.0f,  1.0f,  0.8181f),
-        vec3(0.0f,  1.0f,  0.9090f),
-
-        vec3(0.0f,  1.0f,  1.0f), // top
-        vec3(0.0f,  0.9090f,  1.0f),
-        vec3(0.0f,  0.8181f,  1.0f),
-        vec3(0.0f,  0.7272f,  1.0f),
-        vec3(0.0f,  0.6363f,  1.0f),
-        vec3(0.0f,  0.5454f,  1.0f),
-        vec3(0.0f,  0.4545f,  1.0f),
-        vec3(0.0f,  0.3636f,  1.0f),
-        vec3(0.0f,  0.2727f,  1.0f),
-        vec3(0.0f,  0.1818f,  1.0f),
-        vec3(0.0f,  0.0909f,  1.0f),
-        vec3(0.0f,  0.0f,  1.0f),
-
-        vec3(0.0909f,  0.0f,  1.0f), // coluna esquerda
-        vec3(0.1818f,  0.0f,  1.0f),
-        vec3(0.2727f,  0.0f,  1.0f),
-        vec3(0.3636f,  0.0f,  1.0f),
-        vec3(0.4545f,  0.0f,  1.0f),
-        vec3(0.5454f,  0.0f,  1.0f),
-        vec3(0.6363f,  0.0f,  1.0f),
-        vec3(0.7272f,  0.0f,  1.0f),
-        vec3(0.8181f,  0.0f,  1.0f),
-        vec3(0.9090f,  0.0f,  1.0f),
-        vec3(1.0f,  0.0f,  1.0f),
-        vec3(1.0f,  0.0f,  0.9090f),
-        vec3(1.0f,  0.0f,  0.8181f),
-        vec3(1.0f,  0.0f,  0.7272f),
-        vec3(1.0f,  0.0f,  0.6363f),
-        vec3(1.0f,  0.0f,  0.5454f),
-        vec3(1.0f,  0.0f,  0.4545f),
-        vec3(1.0f,  0.0f,  0.3636f),
-        vec3(1.0f,  0.0f,  0.2727f),
-        vec3(1.0f,  0.0f,  0.1818f),
-        vec3(1.0f,  0.0f,  0.0909f),
-    };
-    
-
-
-    vec3 allPiecesColors[] = {
-        vec3(0.4196f, 0.55686f, 0.13725f),
-        vec3(0.941176f, 0.50196f, 0.50196f),
-        vec3(0.50196f, 0.50196f, 0.0f),
-        vec3(0.54509f, 0.27058f, 0.074509f),
-        vec3(0.4f, 0.80392f, 0.66666f),
-        vec3(0.372549f, 0.6196f, 0.62745f),
-        vec3(0.48235f, 0.40784f, 0.93333f)
-    };
 
 
     //cout << "Pos: " << size(cubePositions) << endl;
@@ -449,15 +310,18 @@ int main()
     currentOption = -1;
     randomPiece();
 
-  
-    
+    moveThread = std::thread(movePieceDown);
 
+    //std::terminate(t);
 
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
-        
+        //reduce piece position 
+        //tmpPiece.futurePosition.y = tmpPiece.futurePosition.y - 0.01;
+
+
         // per-frame time logic
         // --------------------
         float currentFrame = glfwGetTime();
@@ -486,10 +350,6 @@ int main()
         basicShader.setMat4("view", view);
 
 
-        //check if future position is valid (if creates collision)
-        checkColision();
-      
-
         for (unsigned int i = 0; i < size(cubePositions); i++) { // draw square frame
             basicShader.setVec3("color", cubeColors[i]);
             model = translate(mat4(1.0f), cubePositions[i]);
@@ -497,11 +357,7 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
-
-
-
-
-
+        
         //-----------------------------------------pieces-------------------------------------------------------
         if (currentOption != option) { //new piece
             for (int i = 0; i < 4; i++) {
@@ -590,8 +446,7 @@ void debugFunction() {
 
     }
     for (unsigned int i = 0; i < 4; i++)
-        printf("type: %s\n", typeid(tmpPiece.coord[i].x).name())
-        ;
+        printf("type: %s\n", typeid(tmpPiece.coord[i].x).name());
 }
 
 
@@ -599,7 +454,11 @@ void debugFunction() {
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow* window)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { 
+        threads = false;
+        moveThread.join();
+        glfwSetWindowShouldClose(window, true);
+    }
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime + 0.05);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.ProcessKeyboard(BACKWARD, deltaTime + 0.05);
@@ -608,10 +467,40 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camera.ProcessKeyboard(UPWARD, deltaTime + 0.05);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime + 0.05);
 
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) { tmpPiece.futurePosition.x -= speed; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { tmpPiece.futurePosition.x += speed; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) { tmpPiece.futurePosition.y -= speed; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) { tmpPiece.futurePosition.y += speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        if (mtx.try_lock()) {
+            tmpPiece.futurePosition.x -= speed;
+            //check if future position is valid (if creates collision)
+            checkColision();
+            mtx.unlock();
+            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            wait();
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { 
+        if (mtx.try_lock()) {
+            tmpPiece.futurePosition.x += speed;
+            //check if future position is valid (if creates collision)
+            checkColision();
+            mtx.unlock();
+            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            
+            wait();
+        }
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        if (mtx.try_lock()) {
+            tmpPiece.futurePosition.y -= speed;
+            //check if future position is valid (if creates collision)
+            checkColision();
+            mtx.unlock();
+            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            wait();
+        }
+    }
+    
 
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) { 
         randomPiece(); wait();
