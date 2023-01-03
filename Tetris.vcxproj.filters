@@ -18,16 +18,19 @@
     <ClCompile Include="main.cpp">
       <Filter>Arquivos de Origem</Filter>
     </ClCompile>
-    <ClCompile Include="resources\glad\src\glad.c">
+    <ClCompile Include="dependencies\glad\src\glad.c">
       <Filter>Arquivos de Recurso</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\basic_fragment.fs" />
-    <None Include="shaders\basic_vertex.vs" />
+    <None Include="shaders\pieces.fs" />
+    <None Include="shaders\pieces.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ogl-master\lighting\include\camera.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="piecesCoord.h">
       <Filter>Arquivos de Cabeçalho</Filter>
     </ClInclude>
   </ItemGroup>
