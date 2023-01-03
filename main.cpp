@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <list>
+#include <thread>         // std::thread
 
 #include "piecesCoord.h"
 
@@ -223,7 +224,6 @@ void rotationFunc(bool dir) { //dir == true -> counter clockwise
 
 
 void randomPiece() {
-    
     option =  (rand() % 7); //choose random piece (0-6)
 }
 
@@ -242,15 +242,49 @@ void registerPiece() {
 }
 
 
-void drawPiece() {
+#include <chrono>
+#include <thread>
+#include <mutex>
+
+
+
+std::thread moveThread;
+
+
+std::mutex mtx;
+
+std::unique_lock<std::mutex> lck(mtx, std::try_to_lock);
+//bool gotLock = lck.owns_lock();
+bool gotLock = false;
+
+
+bool threads = true;
+bool moving = false;
+void movePieceDown() {
+    while (threads) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        
+        while (moving) {};
+        tmpPiece.futurePosition.y = tmpPiece.futurePosition.y - 1.0f;
+        while(!gotLock){}
+        if (checkColision()) registerPiece(); 
+    }
 
 }
+
+
+
+
+
 
 int main()
 {
 
     srand(time(0));
+   
     
+
+
     
     // glfw: initialize and configure
     // ------------------------------
@@ -449,15 +483,18 @@ int main()
     currentOption = -1;
     randomPiece();
 
-  
-    
+    moveThread = std::thread(movePieceDown);
 
+    //std::terminate(t);
 
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
-        
+        //reduce piece position 
+        //tmpPiece.futurePosition.y = tmpPiece.futurePosition.y - 0.01;
+
+
         // per-frame time logic
         // --------------------
         float currentFrame = glfwGetTime();
@@ -590,8 +627,7 @@ void debugFunction() {
 
     }
     for (unsigned int i = 0; i < 4; i++)
-        printf("type: %s\n", typeid(tmpPiece.coord[i].x).name())
-        ;
+        printf("type: %s\n", typeid(tmpPiece.coord[i].x).name());
 }
 
 
@@ -599,7 +635,11 @@ void debugFunction() {
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow* window)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { 
+        threads = false;
+        moveThread.join();
+        glfwSetWindowShouldClose(window, true);
+    }
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime + 0.05);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.ProcessKeyboard(BACKWARD, deltaTime + 0.05);
@@ -609,7 +649,12 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime + 0.05);
 
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) { tmpPiece.futurePosition.x -= speed; wait(); }
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { tmpPiece.futurePosition.x += speed; wait(); }
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { 
+
+        tmpPiece.futurePosition.x += speed; 
+
+        wait(); 
+    }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) { tmpPiece.futurePosition.y -= speed; wait(); }
     if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) { tmpPiece.futurePosition.y += speed; wait(); }
 
