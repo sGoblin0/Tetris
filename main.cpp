@@ -59,7 +59,7 @@ int currentOption;
 
 
 //piece spawn position
-vec3 pieceSpawnPosition(4.0f, 20.0f, 0.0f);
+vec3 pieceSpawnPosition(4.0f,20.0f, 0.0f);
 
 
 
@@ -84,6 +84,10 @@ typedef struct PIECE{
 PIECE tmpPiece; //current piece
 
 
+//every position correspondes to the index of the color of the cube
+//-1 = empty
+int allPiecesInBoard[21][10]; 
+
 
 
 //checks if any cube is going to collide with another (wall or pieces)
@@ -91,21 +95,20 @@ bool checkColision(bool rotation = false) {
     if (tmpPiece.position == tmpPiece.futurePosition && !rotation) return false; //no need to check for collision
     for (int n = 0; n < 4; n++) { //for every cube of the piece
         vec2 sum = vec2(tmpPiece.coord[n].x + tmpPiece.futurePosition.x, tmpPiece.coord[n].y + tmpPiece.futurePosition.y); //cube position after transladation
+        
+        if (allPiecesInBoard[int(sum.y) - 1][int(sum.x) - 1] != -1) { //check if the future position already has a cube
+            tmpPiece.futurePosition = tmpPiece.position; //colision, future location disregarded
+            return true;
+        }  
+        
         for (unsigned int i = 0; i < sizeof(cubePositions) / sizeof(vec3); i++) { //for every cube of the walls 
             if (sum.x == cubePositions[i].x && sum.y == cubePositions[i].y) {
                 tmpPiece.futurePosition = tmpPiece.position; //colision, future location disregarded
                 return true;
             }
         }
-        for (unsigned int i = 0; i < allPiecesInMap.size(); i++) { //for every piece already on the board
-            for (unsigned int m = 0; m < 4; m++) { //for every cube of every piece already on the board
-                vec3 sumCubes = vec3(allPiecesInMap.at(i).pos, 0.0f) + allPiecesInMap.at(i).coord[m];
-                if (sum.x == sumCubes.x && sum.y == sumCubes.y) {
-                    tmpPiece.futurePosition = tmpPiece.position;
-                    return true;
-                }
-            }
-        }
+
+        
     }
     tmpPiece.position = tmpPiece.futurePosition; //no colision, piece moves for future location
     return false;
@@ -177,22 +180,25 @@ void rotationFunc(bool dir) { //dir == true -> counter clockwise
 
 
 
-void randomPiece() {
+void newPiece() {
     option =  (rand() % 7); //choose random piece (0-6)
+    for(unsigned int i = 0; i<4; i++) tmpPiece.coord[i] = allPieces[option][i];
+    tmpPiece.position = pieceSpawnPosition;
+    tmpPiece.futurePosition = pieceSpawnPosition;
+    tmpPiece.rot = 0;
+    printf("new piece\n");
+    //currentOption = option;
 }
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//register the piece on the board
+//register the piece on the board (registers the index of the color of the cube)
 void registerPiece() {
-    PIECE_BOARD tmp;
-    tmp.pos = tmpPiece.position;
-    tmp.index = option;
-    for (unsigned int i = 0; i < 4; i++) {
-        tmp.coord[i] = tmpPiece.coord[i];
+    //printf("register\n");
+    for (unsigned int i = 0; i < 4; i++) { //for every cube of the piece
+        vec2 sum = tmpPiece.position + tmpPiece.coord[i]; //coordenate of the cube
+        allPiecesInBoard[int(sum.y)-1][int(sum.x)-1] = option;
     }
-    
-	allPiecesInMap.push_back(tmp);
-    randomPiece();
+    newPiece();
 }
 
 
@@ -203,6 +209,8 @@ void registerPiece() {
 
 
 std::thread moveThread;
+std::thread checkLineThread;
+
 
 
 std::mutex mtx;
@@ -222,6 +230,7 @@ void movePieceDown() {
         gotLock = true;
         //gotLock = true;
         tmpPiece.futurePosition.y = tmpPiece.futurePosition.y - 1.0f;
+        //printf("new position: %f %f\n", tmpPiece.futurePosition.x, tmpPiece.futurePosition.y);
         if ((tmpPiece.position - tmpPiece.futurePosition == vec3(0.0f, 1.0f, 0.0f)) && checkColision()) registerPiece();
         mtx.unlock();
         gotLock = false;
@@ -230,15 +239,64 @@ void movePieceDown() {
 }
 
 
+void moveOneRowDown(int row) {
+	int current_row = row, next_row = row+1;
+    for (unsigned int r = row+1; r < 20; r++) {
+        for (unsigned int c = 0; c < 10; c++) {
+            allPiecesInBoard[current_row][c] = allPiecesInBoard[next_row][c];
+        }
+        next_row++;
+        current_row++;
+    }
+}
+
+void checkLine() {
+    while (threads) {
+        int complete = 0;
+        for (int r = 0; r < 21; r++) {
+            for (unsigned int c = 0; c < 10; c++) {
+                if (allPiecesInBoard[r][c] == -1) {
+                    break;
+                }
+                else {
+					complete++;
+                }
+            }
+            if(r == 0) printf("completed: %d\n", complete);
+            if (complete == 10) {
+                printf("Line completed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+                moveOneRowDown(r);
+                r = -1; //restart
+            }
+            complete = 0;
+        }
+    }
+}
 
 
+void printMatrix() {
+    printf("-----------------MATRIX--------------------\n");
+    for (int r = 20; r > -1; r--) {
+        for (int c = 0; c < 10; c++) {
+			printf("%d ", allPiecesInBoard[r][c]);
+        }
+        printf("\n");
+    }
+}
 
 
 int main()
 {
 
-    srand(time(0));
-   
+    srand(time(0)); //allow semi-random numbers
+    
+    //fill allPiecesInBoard matrix with 0's
+    for (unsigned int r = 0; r < 21; r++) { 
+        for (unsigned int c = 0; c < 10; c++) {
+            allPiecesInBoard[r][c] = -1;
+        }
+    }
+
 
     
     // glfw: initialize and configure
@@ -308,9 +366,10 @@ int main()
     unsigned int texture = loadTexture("textures/blockBW.png");
 
     currentOption = -1;
-    randomPiece();
+    newPiece();
 
     moveThread = std::thread(movePieceDown);
+    checkLineThread = std::thread(checkLine);
 
     //std::terminate(t);
 
@@ -359,14 +418,7 @@ int main()
 
         
         //-----------------------------------------pieces-------------------------------------------------------
-        if (currentOption != option) { //new piece
-            for (int i = 0; i < 4; i++) {
-                printf("asdasd\n");
-                tmpPiece.coord[i] = allPieces[option][i];
-            }
-            tmpPiece.position = pieceSpawnPosition;
-            currentOption = option;
-        }
+        
         for (unsigned int i = 0; i < 4; i++){ // draw current piece
 			basicShader.setVec3("color", allPiecesColors[option][0], allPiecesColors[option][1], allPiecesColors[option][2]);
             
@@ -385,15 +437,16 @@ int main()
         }
 
         //-----------------------------------------previous pieces-------------------------------------------------------
-        for (unsigned int i = 0; i < allPiecesInMap.size(); i++) { //draw previous pieces    
-            int index = allPiecesInMap.at(i).index; //piece number
-            vec3 pos = vec3(allPiecesInMap.at(i).pos, 0.0f); //coordenate of the piece
-            vec3* coord = allPiecesInMap.at(i).coord; //coordenates of the cubes in the piece
-            for (unsigned int n = 0; n < 4; n++) {
+        for (unsigned int r = 0; r < 21; r++) { //for every row   
+            for (unsigned int c = 0; c < 10; c++) { //for every column
+                if (allPiecesInBoard[r][c] == -1) continue; //position has no cube, jump to next column
+                int index = allPiecesInBoard[r][c]; //index of the color
+				//printf("%d %d %d\n", index, r, c);
                 basicShader.setVec3("color", allPiecesColors[index][0], allPiecesColors[index][1], allPiecesColors[index][2]);
                 model = mat4(1.0f);
+                vec3 pos = vec3(float(c+1), float(r+1), 0.0f);
                 model = translate(model, pos); //current position of the center piece
-                model = translate(model, coord[n]);//mount pieces together
+                //model = translate(model, tmpPiece.coord[i]);//mount pieces together
 
                 basicShader.setMat4("model", model);
                 //printf("%d\n", i);
@@ -447,6 +500,10 @@ void debugFunction() {
     }
     for (unsigned int i = 0; i < 4; i++)
         printf("type: %s\n", typeid(tmpPiece.coord[i].x).name());
+
+
+    printf("-------------------------------------------------------\n");
+    printMatrix();
 }
 
 
@@ -495,7 +552,7 @@ void processInput(GLFWwindow* window)
             //check if future position is valid (if creates collision)
             checkColision();
             mtx.unlock();
-            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            
 
             wait();
         }
@@ -503,7 +560,7 @@ void processInput(GLFWwindow* window)
     
 
     if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) { 
-        randomPiece(); wait();
+        newPiece(); wait();
 		
     }
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS && option != 2) { //clockwise (option 2 == cube, ergo no rotation)
@@ -514,7 +571,10 @@ void processInput(GLFWwindow* window)
         rotationFunc(true);
         wait(); 
     }
-    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) debugFunction();
+    if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) {
+        debugFunction();
+        wait();
+    }
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) { registerPiece(); wait(); }
 }
