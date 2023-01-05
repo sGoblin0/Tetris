@@ -89,12 +89,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\ruben\Desktop\College\Licenciatura\4Ano\1Semestre\CG\OpenGL\glm;C:\Users\ruben\Desktop\College\Licenciatura\4Ano\1Semestre\CG\OpenGL\glfw-3.3.4.bin.WIN32\include;C:\Users\ruben\Desktop\College\Licenciatura\4Ano\1Semestre\CG\Tetris\resources;C:\Users\ruben\Desktop\College\Licenciatura\4Ano\1Semestre\CG\Tetris\resources\glad\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\dependencies\glm;$(ProjectDir)\dependencies\glfw\include;$(ProjectDir)\dependencies\glad\include;$(ProjectDir)\resources</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\ruben\Desktop\College\Licenciatura\4Ano\1Semestre\CG\OpenGL\glfw-3.3.4.bin.WIN32\lib-vc2019</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)dependencies\glfw\lib-vc2019</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glfw3.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:MSVCRT %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -107,14 +107,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\ruben\Desktop\College\Licenciatura\4Ano\1Semestre\CG\OpenGL\glm;C:\Users\ruben\Desktop\College\Licenciatura\4Ano\1Semestre\CG\OpenGL\glfw-3.3.4.bin.WIN32\include;C:\Users\ruben\Desktop\College\Licenciatura\4Ano\1Semestre\CG\Tetris\resources;C:\Users\ruben\Desktop\College\Licenciatura\4Ano\1Semestre\CG\Tetris\resources\glad\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\dependencies\glm;$(ProjectDir)\dependencies\glfw\include;$(ProjectDir)\dependencies\glad\include;$(ProjectDir)\resources</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\ruben\Desktop\College\Licenciatura\4Ano\1Semestre\CG\OpenGL\glfw-3.3.4.bin.WIN32\lib-vc2019</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)dependencies\glfw\lib-vc2019</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glfw3.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/NODEFAULTLIB:MSVCRT %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -151,8 +151,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="dependencies\glad\src\glad.c" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="resources\glad.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\pieces.fs" />
