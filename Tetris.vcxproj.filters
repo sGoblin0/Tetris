@@ -25,6 +25,8 @@
   <ItemGroup>
     <None Include="shaders\pieces.fs" />
     <None Include="shaders\pieces.vs" />
+    <None Include="shaders\text.fs" />
+    <None Include="shaders\text.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ogl-master\lighting\include\camera.h">
