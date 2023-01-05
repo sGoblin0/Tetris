@@ -1,9 +1,12 @@
-﻿#include <glad\glad.h>
+#include <glad\glad.h>
 
 #include <GLFW/glfw3.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -15,6 +18,10 @@
 #include <iostream>
 #include <list>
 #include <thread>         // std::thread
+#include <map>
+#include <string>
+#include <chrono>
+#include <mutex>
 
 #include "piecesCoord.h"
 
@@ -28,8 +35,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 unsigned int loadTexture(const char* path);
-
-void wait();
+void RenderText(Shader& shader, std::string text, float x, float y, float scale, glm::vec3 color);
 
 // settings
 const unsigned int SCR_WIDTH = 1920; // escolham as vossa resoluçao de ecra !!!!!!!!!!!!!
@@ -53,25 +59,25 @@ mat4 model = mat4(1.0f);
 
 // helpful variables
 float speed = 1.0f;
+int points = 0;
+
 //by comparing the next two variables, we can check if the piece number has changed
 int option; 
-int currentOption; 
-
+int currentOption;
 
 //piece spawn position
 vec3 pieceSpawnPosition(4.0f,20.0f, 0.0f);
 
 
-
-
-typedef struct PIECE_BOARD {
-    vec2 pos; //position of the piece in the board
-	int index; //index of the piece (option)
-    vec3 coord[4]; //coordenates (position of cubes in relation the the center cube)
-}PIECE_BOARD;
-
-vector<PIECE_BOARD> allPiecesInMap; //10 x 21 (regras jogo)
-
+/// Holds all state information relevant to a character as loaded using FreeType
+struct Character {
+    unsigned int TextureID; // ID handle of the glyph texture
+    glm::ivec2   Size;      // Size of glyph
+    glm::ivec2   Bearing;   // Offset from baseline to left/top of glyph
+    unsigned int Advance;   // Horizontal offset to advance to next glyph
+};
+map<GLchar, Character> Characters;
+unsigned int textVAO, textVBO;
 
 
 
@@ -132,7 +138,7 @@ void rotationFunc(bool dir) { //dir == true -> counter clockwise
     if (dir) {
         x = -1;
         rotation[1]--;
-        if (rotation[1] < 0) rotation[1] = 3;	
+        if (rotation[1] < 0) rotation[1] = 3;   
     }
     else {
         x = 1;
@@ -177,8 +183,9 @@ void rotationFunc(bool dir) { //dir == true -> counter clockwise
 }
 
 
-
-
+void wait() {
+    glfwWaitEventsTimeout(0.7);
+}
 
 void newPiece() {
     option =  (rand() % 7); //choose random piece (0-6)
@@ -202,17 +209,8 @@ void registerPiece() {
 }
 
 
-#include <chrono>
-#include <thread>
-#include <mutex>
-
-
-
 std::thread moveThread;
 std::thread checkLineThread;
-
-
-
 std::mutex mtx;
 
 //std::unique_lock<std::mutex> lck(mtx, std::try_to_lock);
@@ -223,7 +221,7 @@ bool threads = true;
 bool moving = false;
 void movePieceDown() {
     while (threads) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(700));
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
         while(true){
             if (mtx.try_lock()) break;
         }
@@ -240,7 +238,7 @@ void movePieceDown() {
 
 
 void moveOneRowDown(int row) {
-	int current_row = row, next_row = row+1;
+    int current_row = row, next_row = row+1;
     for (unsigned int r = row+1; r < 20; r++) {
         for (unsigned int c = 0; c < 10; c++) {
             allPiecesInBoard[current_row][c] = allPiecesInBoard[next_row][c];
@@ -259,12 +257,13 @@ void checkLine() {
                     break;
                 }
                 else {
-					complete++;
+                    complete++;
                 }
             }
             if(r == 0) printf("completed: %d\n", complete);
             if (complete == 10) {
                 printf("Line completed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+                points++;
                 moveOneRowDown(r);
                 r = -1; //restart
             }
@@ -273,12 +272,11 @@ void checkLine() {
     }
 }
 
-
 void printMatrix() {
     printf("-----------------MATRIX--------------------\n");
     for (int r = 20; r > -1; r--) {
         for (int c = 0; c < 10; c++) {
-			printf("%d ", allPiecesInBoard[r][c]);
+            printf("%d ", allPiecesInBoard[r][c]);
         }
         printf("\n");
     }
@@ -312,8 +310,8 @@ int main()
 
     // glfw window creation
     // --------------------
-    //GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
+    //GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -338,22 +336,102 @@ int main()
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // build and compile our shader zprogram
     // ------------------------------------
     Shader basicShader("shaders/pieces.vs", "shaders/pieces.fs");
-
-    // set up vertex data (and buffer(s)) and configure vertex attributes
+    Shader textShader("shaders/text.vs", "shaders/text.fs");
     
 
 
-    //cout << "Pos: " << size(cubePositions) << endl;
-    //cout << "Cor: " << size(cubeColors) << endl;
+    // FreeType
+    // --------
+    FT_Library ft;
+    // All functions return a value different than 0 whenever an error occurred
+    if (FT_Init_FreeType(&ft))
+    {
+        std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+        return -1;
+    }
 
-    unsigned int VBO, cubeVAO;
+    // load font as face
+    FT_Face face;
+    if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face)) {
+        std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+        return -1;
+    }
+    else {
+        // set size to load glyphs as
+        FT_Set_Pixel_Sizes(face, 0, 48);
+
+        // disable byte-alignment restriction
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+        // load first 128 characters of ASCII set
+        for (unsigned char c = 0; c < 128; c++)
+        {
+            // Load character glyph 
+            if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+            {
+                std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+                continue;
+            }
+            // generate texture
+            unsigned int texture1;
+            glGenTextures(1, &texture1);
+            glBindTexture(GL_TEXTURE_2D, texture1);
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RED,
+                face->glyph->bitmap.width,
+                face->glyph->bitmap.rows,
+                0,
+                GL_RED,
+                GL_UNSIGNED_BYTE,
+                face->glyph->bitmap.buffer
+            );
+            // set texture options
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            // now store character for later use
+            Character character = {
+                texture1,
+                glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+                glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+                static_cast<unsigned int>(face->glyph->advance.x)
+            };
+            Characters.insert(std::pair<char, Character>(c, character));
+        }
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    // destroy FreeType once we're finished
+    FT_Done_Face(face);
+    FT_Done_FreeType(ft);
+
+
+    // configure VAO/VBO for texture quads
+    // -----------------------------------
+    glGenVertexArrays(1, &textVAO);
+    glGenBuffers(1, &textVBO);
+    glBindVertexArray(textVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+
+    // set up vertex data (and buffer(s)) and configure vertex attributes
+    unsigned int cubeVBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glGenBuffers(1, &cubeVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glBindVertexArray(cubeVAO);
     // vertices position
@@ -364,13 +442,14 @@ int main()
     glEnableVertexAttribArray(1);
 
     unsigned int texture = loadTexture("textures/blockBW.png");
+    basicShader.use();
+    basicShader.setInt("texture1", 1);
 
     currentOption = -1;
     newPiece();
 
     moveThread = std::thread(movePieceDown);
     checkLineThread = std::thread(checkLine);
-
     //std::terminate(t);
 
     // render loop
@@ -398,11 +477,18 @@ int main()
         glClearColor(0.53f, 0.81f, 0.98f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glBindTexture(GL_TEXTURE_2D, texture);
 
-        projection = perspective(radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+        //projection = perspective(radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        projection = ortho(-(float)(SCR_WIDTH)/90, (float)(SCR_WIDTH)/90, -(float)(SCR_HEIGHT)/90, (float)(SCR_HEIGHT)/90, 0.0f, 100.0f);
         view = camera.GetViewMatrix();
 
+        textShader.use();
+        textShader.setMat4("projection", projection);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glBindVertexArray(cubeVAO);
         //-----------------------------------------frame-------------------------------------------------------
         basicShader.use();
         basicShader.setMat4("projection", projection);
@@ -420,7 +506,7 @@ int main()
         //-----------------------------------------pieces-------------------------------------------------------
         
         for (unsigned int i = 0; i < 4; i++){ // draw current piece
-			basicShader.setVec3("color", allPiecesColors[option][0], allPiecesColors[option][1], allPiecesColors[option][2]);
+            basicShader.setVec3("color", allPiecesColors[option][0], allPiecesColors[option][1], allPiecesColors[option][2]);
             
 
             model = mat4(1.0f);
@@ -441,7 +527,7 @@ int main()
             for (unsigned int c = 0; c < 10; c++) { //for every column
                 if (allPiecesInBoard[r][c] == -1) continue; //position has no cube, jump to next column
                 int index = allPiecesInBoard[r][c]; //index of the color
-				//printf("%d %d %d\n", index, r, c);
+                //printf("%d %d %d\n", index, r, c);
                 basicShader.setVec3("color", allPiecesColors[index][0], allPiecesColors[index][1], allPiecesColors[index][2]);
                 model = mat4(1.0f);
                 vec3 pos = vec3(float(c+1), float(r+1), 0.0f);
@@ -457,7 +543,9 @@ int main()
             
             
         }
-        
+
+        RenderText(textShader, "Pontos: " + to_string(points), -((float)(SCR_WIDTH) / 90) + 1, -((float)(SCR_HEIGHT) / 90) + 1, 0.03f, glm::vec3(0.0, 0.0f, 0.0f));
+
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
@@ -467,7 +555,7 @@ int main()
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &cubeVAO);
-    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &cubeVBO);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -514,6 +602,7 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { 
         threads = false;
         moveThread.join();
+        checkLineThread.join();
         glfwSetWindowShouldClose(window, true);
     }
 
@@ -558,12 +647,7 @@ void processInput(GLFWwindow* window)
         }
     }
     
-
-    if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) { 
-        newPiece(); wait();
-		
-    }
-	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS && option != 2) { //clockwise (option 2 == cube, ergo no rotation)
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS && option != 2) { //clockwise (option 2 == cube, ergo no rotation)
         rotationFunc(false);
         wait(); 
     }
@@ -576,7 +660,7 @@ void processInput(GLFWwindow* window)
         wait();
     }
 
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) { registerPiece(); wait(); }
+    //if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) { registerPiece(); wait(); }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -652,9 +736,49 @@ unsigned int loadTexture(char const* path)
 
     return textureID;
 }
+// render line of text
+// -------------------
+void RenderText(Shader& textShader, std::string text, float x, float y, float scale, glm::vec3 color)
+{
+    // activate corresponding render state  
+    textShader.use();
+    textShader.setVec3("textColor", color.x, color.y, color.z);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(textVAO);
 
+    // iterate through all characters
+    std::string::const_iterator c;
+    for (c = text.begin(); c != text.end(); c++)
+    {
+        Character ch = Characters[*c];
 
+        float xpos = x + ch.Bearing.x * scale;
+        float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
 
-void wait() {
-    glfwWaitEventsTimeout(0.7);
+        float w = ch.Size.x * scale;
+        float h = ch.Size.y * scale;
+        // update VBO for each character
+        float textVertices[6][4] = {
+            { xpos,     ypos + h,   0.0f, 0.0f },
+            { xpos,     ypos,       0.0f, 1.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+
+            { xpos,     ypos + h,   0.0f, 0.0f },
+            { xpos + w, ypos,       1.0f, 1.0f },
+            { xpos + w, ypos + h,   1.0f, 0.0f }
+        };
+        // render glyph texture over quad
+        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+        // update content of VBO memory
+        glBindBuffer(GL_ARRAY_BUFFER, textVBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(textVertices), textVertices); // be sure to use glBufferSubData and not glBufferData
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+    }
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
