@@ -5,12 +5,7 @@
 
 1.Press Arrow keys to move
 
-2.Press "O" to change piece
-
-3.Press "Z" & "X" to rotate piece
+2.Press "Z" & "X" to rotate piece
 
 ## Expetativa
 ![expectation](./textures/expectations.jpeg "expectation")
-
-## Peças
-![pieces](./textures/pieces.png "pieces")
