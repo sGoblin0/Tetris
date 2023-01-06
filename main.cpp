@@ -17,7 +17,7 @@
 
 #include <iostream>
 #include <list>
-#include <thread>         // std::thread
+#include <thread>         // thread
 #include <map>
 #include <string>
 #include <chrono>
@@ -35,7 +35,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 unsigned int loadTexture(const char* path);
-void RenderText(Shader& shader, std::string text, float x, float y, float scale, glm::vec3 color);
+void RenderText(Shader& shader, string text, float x, float y, float scale, glm::vec3 color);
 
 // settings
 const unsigned int SCR_WIDTH = 1920; // escolham as vossa resoluçao de ecra !!!!!!!!!!!!!
@@ -122,10 +122,6 @@ bool checkColision(bool rotation = false) {
 
 
 
-
-//-----------------------------------------------------------------------------------------
-
-
 //rotation from/to.
 //f.e rotation from spawn to clockwise: {0,1}
 //f.e roation from spawn to conterclockwise: {0,3}
@@ -209,11 +205,11 @@ void registerPiece() {
 }
 
 
-std::thread moveThread;
-std::thread checkLineThread;
-std::mutex mtx;
+thread moveThread;
+thread checkLineThread;
+mutex mtx;
 
-//std::unique_lock<std::mutex> lck(mtx, std::try_to_lock);
+//unique_lock<mutex> lck(mtx, try_to_lock);
 //bool gotLock = lck.owns_lock();
 bool gotLock = true;
 
@@ -221,7 +217,7 @@ bool threads = true;
 bool moving = false;
 void movePieceDown() {
     while (threads) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        this_thread::sleep_for(chrono::milliseconds(300));
         while(true){
             if (mtx.try_lock()) break;
         }
@@ -314,7 +310,7 @@ int main()
     //GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
     if (window == NULL)
     {
-        std::cout << "Failed to create GLFW window" << std::endl;
+        cout << "Failed to create GLFW window" << endl;
         glfwTerminate();
         return -1;
     }
@@ -329,7 +325,7 @@ int main()
     // glad: load all OpenGL function pointers
     // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+        cout << "Failed to initialize GLAD" << endl;
         return -1;
     }
 
@@ -345,21 +341,21 @@ int main()
     Shader textShader("shaders/text.vs", "shaders/text.fs");
     
 
-
+    //-----------------------------------------------------------WRITE ON SCREEN-------------------------------------------------------------------------
     // FreeType
     // --------
     FT_Library ft;
     // All functions return a value different than 0 whenever an error occurred
     if (FT_Init_FreeType(&ft))
     {
-        std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+        cout << "ERROR::FREETYPE: Could not init FreeType Library" << endl;
         return -1;
     }
 
     // load font as face
     FT_Face face;
     if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face)) {
-        std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+        cout << "ERROR::FREETYPE: Failed to load font" << endl;
         return -1;
     }
     else {
@@ -375,7 +371,7 @@ int main()
             // Load character glyph 
             if (FT_Load_Char(face, c, FT_LOAD_RENDER))
             {
-                std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+                cout << "ERROR::FREETYTPE: Failed to load Glyph" << endl;
                 continue;
             }
             // generate texture
@@ -405,14 +401,14 @@ int main()
                 glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
                 static_cast<unsigned int>(face->glyph->advance.x)
             };
-            Characters.insert(std::pair<char, Character>(c, character));
+            Characters.insert(pair<char, Character>(c, character));
         }
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     // destroy FreeType once we're finished
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
-
+    //-----------------------------------------------------------WRITE ON SCREEN-------------------------------------------------------------------------
 
     // configure VAO/VBO for texture quads
     // -----------------------------------
@@ -448,9 +444,9 @@ int main()
     currentOption = -1;
     newPiece();
 
-    moveThread = std::thread(movePieceDown);
-    checkLineThread = std::thread(checkLine);
-    //std::terminate(t);
+    moveThread = thread(movePieceDown);
+    checkLineThread = thread(checkLine);
+    //terminate(t);
 
     // render loop
     // -----------
@@ -466,8 +462,6 @@ int main()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        bool R = false, G = true, B = false; //?????????????
-
         // input
         // -----
         processInput(window);
@@ -477,11 +471,7 @@ int main()
         glClearColor(0.53f, 0.81f, 0.98f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-
-        //projection = perspective(radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        projection = ortho(-(float)(SCR_WIDTH)/90, (float)(SCR_WIDTH)/90, -(float)(SCR_HEIGHT)/90, (float)(SCR_HEIGHT)/90, 0.0f, 100.0f);
-        view = camera.GetViewMatrix();
+        projection = ortho(-(float)(SCR_WIDTH)/100, (float)(SCR_WIDTH)/100, -(float)(SCR_HEIGHT)/100, (float)(SCR_HEIGHT)/100);
 
         textShader.use();
         textShader.setMat4("projection", projection);
@@ -489,11 +479,14 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(cubeVAO);
+
+        projection = perspective(radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        view = camera.GetViewMatrix();
+
         //-----------------------------------------frame-------------------------------------------------------
         basicShader.use();
         basicShader.setMat4("projection", projection);
         basicShader.setMat4("view", view);
-
 
         for (unsigned int i = 0; i < size(cubePositions); i++) { // draw square frame
             basicShader.setVec3("color", cubeColors[i]);
@@ -502,15 +495,11 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
-        
         //-----------------------------------------pieces-------------------------------------------------------
-        
         for (unsigned int i = 0; i < 4; i++){ // draw current piece
             basicShader.setVec3("color", allPiecesColors[option][0], allPiecesColors[option][1], allPiecesColors[option][2]);
-            
 
-            model = mat4(1.0f);
-            model = translate(model, tmpPiece.position); //current position of the center piece
+            model = translate(mat4(1.0f), tmpPiece.position); //current position of the center piece
             model = translate(model, tmpPiece.coord[i]);//mount pieces together
           
             basicShader.setMat4("model", model);
@@ -518,8 +507,6 @@ int main()
             //printf("%f %f %f %f\n\n", model[0][0], model[0][1], model[1][0], model[1][1]);
             
             glDrawArrays(GL_TRIANGLES, 0, 36);
-
-            
         }
 
         //-----------------------------------------previous pieces-------------------------------------------------------
@@ -540,11 +527,9 @@ int main()
 
                 glDrawArrays(GL_TRIANGLES, 0, 36);
             }
-            
-            
         }
 
-        RenderText(textShader, "Pontos: " + to_string(points), -((float)(SCR_WIDTH) / 90) + 1, -((float)(SCR_HEIGHT) / 90) + 1, 0.03f, glm::vec3(0.0, 0.0f, 0.0f));
+        RenderText(textShader, "Pontos: " + to_string(points), -((float)(SCR_WIDTH) / 100) + 1, -((float)(SCR_HEIGHT) / 100) + 1, 0.03f, glm::vec3(0.0, 0.0f, 0.0f));
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -556,13 +541,14 @@ int main()
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &cubeVAO);
     glDeleteBuffers(1, &cubeVBO);
+    glDeleteVertexArrays(1, &textVAO);
+    glDeleteBuffers(1, &textVBO);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
 }
-
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 void debugFunction() {
@@ -619,7 +605,7 @@ void processInput(GLFWwindow* window)
             //check if future position is valid (if creates collision)
             checkColision();
             mtx.unlock();
-            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            //this_thread::sleep_for(chrono::milliseconds(100));
 
             wait();
         }
@@ -630,7 +616,7 @@ void processInput(GLFWwindow* window)
             //check if future position is valid (if creates collision)
             checkColision();
             mtx.unlock();
-            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            //this_thread::sleep_for(chrono::milliseconds(100));
             
             wait();
         }
@@ -730,7 +716,7 @@ unsigned int loadTexture(char const* path)
     }
     else
     {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
+        cout << "Texture failed to load at path: " << path << endl;
         stbi_image_free(data);
     }
 
@@ -738,7 +724,7 @@ unsigned int loadTexture(char const* path)
 }
 // render line of text
 // -------------------
-void RenderText(Shader& textShader, std::string text, float x, float y, float scale, glm::vec3 color)
+void RenderText(Shader& textShader, string text, float x, float y, float scale, glm::vec3 color)
 {
     // activate corresponding render state  
     textShader.use();
@@ -747,7 +733,7 @@ void RenderText(Shader& textShader, std::string text, float x, float y, float sc
     glBindVertexArray(textVAO);
 
     // iterate through all characters
-    std::string::const_iterator c;
+    string::const_iterator c;
     for (c = text.begin(); c != text.end(); c++)
     {
         Character ch = Characters[*c];
