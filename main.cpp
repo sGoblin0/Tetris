@@ -22,6 +22,7 @@
 #include <string>
 #include <chrono>
 #include <mutex>
+#include <fstream>
 
 #include "piecesCoord.h"
 
@@ -256,7 +257,6 @@ void checkLine() {
                     complete++;
                 }
             }
-            if(r == 0) printf("completed: %d\n", complete);
             if (complete == 10) {
                 printf("Line completed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
                 points++;
@@ -279,8 +279,11 @@ void printMatrix() {
 }
 
 
-int main()
-{
+int main(){
+    int record = 0;
+    fstream recordFile("record.txt");
+    recordFile >> record; // gets the record value on the file
+    recordFile.close();
 
     srand(time(0)); //allow semi-random numbers
     
@@ -543,6 +546,13 @@ int main()
     glDeleteBuffers(1, &cubeVBO);
     glDeleteVertexArrays(1, &textVAO);
     glDeleteBuffers(1, &textVBO);
+
+    // saves record
+    if (points >= record) {
+        fstream recordFile("record.txt");
+        recordFile << points; 
+        recordFile.close();
+    }
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
