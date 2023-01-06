@@ -63,8 +63,8 @@ float speed = 1.0f;
 int points = 0;
 
 //by comparing the next two variables, we can check if the piece number has changed
-int option; 
-int currentOption;
+int option = (rand() % 7);
+int nextOption = (rand() % 7);
 
 //piece spawn position
 vec3 pieceSpawnPosition(4.0f,20.0f, 0.0f);
@@ -444,7 +444,7 @@ int main(){
     basicShader.use();
     basicShader.setInt("texture1", 1);
 
-    currentOption = -1;
+    nextOption = -1;
     newPiece();
 
     moveThread = thread(movePieceDown);
@@ -519,9 +519,8 @@ int main(){
                 int index = allPiecesInBoard[r][c]; //index of the color
                 //printf("%d %d %d\n", index, r, c);
                 basicShader.setVec3("color", allPiecesColors[index][0], allPiecesColors[index][1], allPiecesColors[index][2]);
-                model = mat4(1.0f);
                 vec3 pos = vec3(float(c+1), float(r+1), 0.0f);
-                model = translate(model, pos); //current position of the center piece
+                model = translate(mat4(1.0f), pos); //current position of the center piece
                 //model = translate(model, tmpPiece.coord[i]);//mount pieces together
 
                 basicShader.setMat4("model", model);
@@ -531,6 +530,7 @@ int main(){
                 glDrawArrays(GL_TRIANGLES, 0, 36);
             }
         }
+        RenderText(textShader, "Record: " + to_string(record), -((float)(SCR_WIDTH) / 100) + 1, ((float)(SCR_HEIGHT) / 100) - 2, 0.03f, glm::vec3(0.0, 0.0f, 0.0f));
 
         RenderText(textShader, "Pontos: " + to_string(points), -((float)(SCR_WIDTH) / 100) + 1, -((float)(SCR_HEIGHT) / 100) + 1, 0.03f, glm::vec3(0.0, 0.0f, 0.0f));
 
