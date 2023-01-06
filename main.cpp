@@ -63,8 +63,8 @@ float speed = 1.0f;
 int points = 0;
 
 //by comparing the next two variables, we can check if the piece number has changed
-int option = (rand() % 7);
-int nextOption = (rand() % 7);
+
+int option = (rand() % 7), nextOption = (rand() % 7);
 
 //piece spawn position
 vec3 pieceSpawnPosition(4.0f,20.0f, 0.0f);
@@ -89,6 +89,7 @@ typedef struct PIECE{
     int rot = 0; //rotation
 }PIECE;
 PIECE tmpPiece; //current piece
+PIECE nextPiece;
 
 
 //every position correspondes to the index of the color of the cube
@@ -191,11 +192,21 @@ void wait() {
 }
 
 void newPiece() {
-    option =  (rand() % 7); //choose random piece (0-6)
+    srand(time(0));
+    option = nextOption; //choose random piece (0-6)
+    nextOption = (rand() % 7);
+
     for(unsigned int i = 0; i<4; i++) tmpPiece.coord[i] = allPieces[option][i];
     tmpPiece.position = pieceSpawnPosition;
     tmpPiece.futurePosition = pieceSpawnPosition;
     tmpPiece.rot = 0;
+
+    
+    for(unsigned int i = 0; i<4; i++) nextPiece.coord[i] = allPieces[nextOption][i];
+    nextPiece.position = pieceSpawnPosition;
+    nextPiece.futurePosition = pieceSpawnPosition;
+    nextPiece.rot = 0;
+
     printf("new piece\n");
     //currentOption = option;
 }
@@ -291,8 +302,8 @@ int main(){
     recordFile >> record; // gets the record value on the file
     recordFile.close();
 
-    srand(time(0)); //allow semi-random numbers
     
+
     //fill allPiecesInBoard matrix with 0's
     for (unsigned int r = 0; r < 21; r++) { 
         for (unsigned int c = 0; c < 10; c++) {
@@ -450,7 +461,6 @@ int main(){
     basicShader.use();
     basicShader.setInt("texture1", 1);
 
-    nextOption = -1;
     newPiece();
 
     moveThread = thread(movePieceDown);
@@ -461,9 +471,7 @@ int main(){
     // -----------
     while (!glfwWindowShouldClose(window))
     {
-        //reduce piece position 
-        //tmpPiece.futurePosition.y = tmpPiece.futurePosition.y - 0.01;
-
+        // //allow semi-random numbers
 
         // per-frame time logic
         // --------------------
@@ -480,7 +488,7 @@ int main(){
         glClearColor(0.53f, 0.81f, 0.98f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        projection = ortho(-(float)(SCR_WIDTH)/100, (float)(SCR_WIDTH)/100, -(float)(SCR_HEIGHT)/100, (float)(SCR_HEIGHT)/100);
+        projection = ortho(0.0f, (float)SCR_WIDTH, 0.0f, (float)SCR_HEIGHT);
 
         textShader.use();
         textShader.setMat4("projection", projection);
@@ -518,6 +526,20 @@ int main(){
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
+        //-----------------------------------------next piece-------------------------------------------------------
+        for (unsigned int i = 0; i < 4; i++) { // draw current piece
+            basicShader.setVec3("color", allPiecesColors[nextOption][0], allPiecesColors[nextOption][1], allPiecesColors[nextOption][2]);
+
+            model = translate(mat4(1.0f), vec3(15.0f, 15.0f, 0.0f)); //current position of the center piece
+            model = translate(model, nextPiece.coord[i]);//mount pieces together
+
+            basicShader.setMat4("model", model);
+            //printf("%d\n", i);
+            //printf("%f %f %f %f\n\n", model[0][0], model[0][1], model[1][0], model[1][1]);
+
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
         //-----------------------------------------previous pieces-------------------------------------------------------
         for (unsigned int r = 0; r < 21; r++) { //for every row   
             for (unsigned int c = 0; c < 10; c++) { //for every column
@@ -536,9 +558,9 @@ int main(){
                 glDrawArrays(GL_TRIANGLES, 0, 36);
             }
         }
-        RenderText(textShader, "Record: " + to_string(record), -((float)(SCR_WIDTH) / 100) + 1, ((float)(SCR_HEIGHT) / 100) - 2, 0.03f, glm::vec3(0.0, 0.0f, 0.0f));
+        RenderText(textShader, "Record: " + to_string(record), 50.0f, (float)(SCR_HEIGHT) - 100, 1.5f, glm::vec3(0.0, 0.0f, 0.0f));
 
-        RenderText(textShader, "Pontos: " + to_string(points), -((float)(SCR_WIDTH) / 100) + 1, -((float)(SCR_HEIGHT) / 100) + 1, 0.03f, glm::vec3(0.0, 0.0f, 0.0f));
+        RenderText(textShader, "Pontos: " + to_string(points), 50.0f, 50.0f, 1.5f, glm::vec3(0.0, 0.0f, 0.0f));
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------

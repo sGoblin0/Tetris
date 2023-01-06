@@ -3,12 +3,9 @@
 ## Até ao momento é isto:
 ![status](./textures/status.png "status")
 
-1.Press Arrow keys to move
+1.Press arrow keys to move
 
-2.Press "O" to change piece
+2.Press "Z" & "X" to change rotation
 
 ## Expetativa
 ![expectation](./textures/expectations.jpeg "expectation")
-
-## Peças
-![pieces](./textures/pieces.png "pieces")
