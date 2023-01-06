@@ -182,6 +182,49 @@ vec3 offsetMatrix[8][4] = {
 
 
 
+vec3 offsetI01[] = { //also works for 3>>2
+    vec3(-2.0f, 0.0f, 0.0f),
+    vec3(1.0f, 0.0f, 0.0f),
+    vec3(-2.0f, -1.0f, 0.0f),
+    vec3(1.0f, 2.0f, 0.0f)
+};
+
+vec3 offsetI10[] = { //also works for 2>>3
+    vec3(2.0f, 0.0f, 0.0f),
+    vec3(-1.0f, 0.0f, 0.0f),
+    vec3(2.0f, 1.0f, 0.0f),
+    vec3(-1.0f, -2.0f, 0.0f)
+};
+
+vec3 offsetI12[] = { //also works for 0>>3
+	vec3(-1.0f, 0.0f, 0.0f),
+	vec3(2.0f, 0.0f, 0.0f),
+	vec3(-1.0f, 2.0f, 0.0f),
+	vec3(2.0f, -1.0f, 0.0f)
+};
+
+
+vec3 offsetI21[] = { //also works for 3>>0
+	vec3(1.0f, 0.0f, 0.0f),
+	vec3(-2.0f, 0.0f, 0.0f),
+	vec3(1.0f, -2.0f, 0.0f),
+	vec3(-2.0f, 1.0f, 0.0f)
+};
+
+
+
+
+vec3 offsetMatrixI[8][4] = {
+    *offsetNull,*offsetI01,*offsetNull,*offsetI12,
+    *offsetI10,*offsetNull,*offsetI12,*offsetNull,
+    *offsetNull,*offsetI21,*offsetNull,*offsetI10,
+    *offsetI21, *offsetNull, *offsetI01, *offsetNull
+};
+ 
+
+
+
+
 //-----------------------------------------------
 // ------------------------------------------------------------------
 float vertices[] = { // CUBE

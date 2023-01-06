@@ -89,7 +89,11 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+<<<<<<< Updated upstream
       <AdditionalIncludeDirectories>$(ProjectDir)resources;$(ProjectDir)dependencies/glad/include;$(ProjectDir)dependencies/glfw/include;$(ProjectDir)dependencies/glew/include;$(ProjectDir)dependencies/glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+=======
+      <AdditionalIncludeDirectories>$(ProjectDir)dependencies\glm;$(ProjectDir)dependencies\glfw\include;$(ProjectDir)dependencies\glad\include;$(ProjectDir)resources</AdditionalIncludeDirectories>
+>>>>>>> Stashed changes
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
