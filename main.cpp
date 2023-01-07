@@ -29,7 +29,6 @@
 using namespace std;
 using namespace glm;
 
-float M_PI = 3.14159265358979323846;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -42,6 +41,10 @@ unsigned int loadCubemap(vector<std::string> faces);
 // settings
 const unsigned int SCR_WIDTH = 1920; // escolham as vossa resoluçao de ecra !!!!!!!!!!!!!
 const unsigned int SCR_HEIGHT = 1080;
+
+// window
+GLFWwindow* window;
+
 
 // camera
 Camera camera(vec3(5.5f, 11.0f, 30.0f));
@@ -70,6 +73,30 @@ int option, nextOption;
 vec3 pieceSpawnPosition(4.0f,20.0f, 0.0f);
 
 
+//rotation from/to. To be used with the offsetMatrix
+//f.e rotation from spawn to clockwise: {0,1}
+//f.e rotation from spawn to conterclockwise: {0,3}
+int rotation[] = { 0,0 };
+
+
+thread moveThread;
+thread checkLineThread;
+thread gameOverThread;
+mutex mtx;
+
+
+//unique_lock<mutex> lck(mtx, try_to_lock);
+//bool gotLock = lck.owns_lock();
+bool gotLock = true;
+bool threads = true;
+bool moving = false;
+
+
+//every position correspondes to the index of the color of the cube
+//-1 = empty
+int allPiecesInBoard[21][10];
+
+
 /// Holds all state information relevant to a character as loaded using FreeType
 struct Character {
     unsigned int TextureID; // ID handle of the glyph texture
@@ -91,13 +118,7 @@ typedef struct PIECE{
 PIECE tmpPiece; //current piece
 PIECE nextPiece;
 
-
-//every position correspondes to the index of the color of the cube
-//-1 = empty
-int allPiecesInBoard[21][10]; 
-
-
-
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //checks if any cube is going to collide with another (wall or pieces)
 bool checkColision(bool rotation = false) {
     if (tmpPiece.position == tmpPiece.futurePosition && !rotation) return false; //no need to check for collision
@@ -122,13 +143,8 @@ bool checkColision(bool rotation = false) {
     return false;
 }
 
-
-
-//rotation from/to. To be used with the offsetMatrix
-//f.e rotation from spawn to clockwise: {0,1}
-//f.e rotation from spawn to conterclockwise: {0,3}
-int rotation[] = { 0,0 };  
-
+ 
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //to rotate the pieces, and apply the offsets if necessary
 void rotationFunc(bool dir) { //dir == true -> counter clockwise
     int x = 0; //if clockwise or counterclockwise
@@ -167,7 +183,7 @@ void rotationFunc(bool dir) { //dir == true -> counter clockwise
     
     while (checkColision(true)) {
         if (offset_n > 4) { //none offset worked, ignore rotation
-            rotationFunc(-dir); //rotate back to original form
+            rotationFunc(!dir); //rotate back to original form
             break;
         }
         printf("It indeed has colision!!!!\n\n");
@@ -186,11 +202,18 @@ void rotationFunc(bool dir) { //dir == true -> counter clockwise
     
 }
 
-
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+void end() {
+    threads = false;
+    moveThread.join();
+    checkLineThread.join();
+    glfwSetWindowShouldClose(window, true);
+}
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void wait() {
     glfwWaitEventsTimeout(0.7);
 }
-
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void newPiece() {
     option = nextOption; //choose random piece (0-6)
     nextOption = (rand() % 7);
@@ -207,31 +230,24 @@ void newPiece() {
     nextPiece.rot = 0;
 
     printf("new piece\n");
-    //currentOption = option;
 }
 
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //register the piece on the board (registers the index of the color of the cube)
 void registerPiece() {
     //printf("register\n");
     for (unsigned int i = 0; i < 4; i++) { //for every cube of the piece
         vec2 sum = tmpPiece.position + tmpPiece.coord[i]; //coordenate of the cube
-        allPiecesInBoard[int(sum.y)-1][int(sum.x)-1] = option;
+
+        if (allPiecesInBoard[int(sum.y) - 1][int(sum.x) - 1] != -1) end(); ////-------------------------- GAME OVER
+
+        allPiecesInBoard[int(sum.y) - 1][int(sum.x) - 1] = option;
+
     }
     newPiece();
 }
 
-
-thread moveThread;
-thread checkLineThread;
-mutex mtx;
-
-//unique_lock<mutex> lck(mtx, try_to_lock);
-//bool gotLock = lck.owns_lock();
-bool gotLock = true;
-
-bool threads = true;
-bool moving = false;
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void movePieceDown() {
     while (threads) {
         this_thread::sleep_for(chrono::milliseconds(300));
@@ -245,11 +261,10 @@ void movePieceDown() {
         if ((tmpPiece.position - tmpPiece.futurePosition == vec3(0.0f, 1.0f, 0.0f)) && checkColision()) registerPiece();
         mtx.unlock();
         gotLock = false;
-    }   
-
+    }
 }
 
-
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void moveOneRowDown(int row) {
     int current_row = row, next_row = row+1;
     for (unsigned int r = row+1; r < 20; r++) {
@@ -260,7 +275,7 @@ void moveOneRowDown(int row) {
         current_row++;
     }
 }
-
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void checkLine() {
     while (threads) {
         int complete = 0;
@@ -283,7 +298,7 @@ void checkLine() {
         }
     }
 }
-
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void printMatrix() {
     printf("-----------------MATRIX--------------------\n");
     for (int r = 20; r > -1; r--) {
@@ -293,8 +308,7 @@ void printMatrix() {
         printf("\n");
     }
 }
-
-
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 int main(){
     int record = 0;
     fstream recordFile("record.txt");
@@ -325,8 +339,8 @@ int main(){
 
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
-    //GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
+    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
+    //window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
     if (window == NULL)
     {
         cout << "Failed to create GLFW window" << endl;
@@ -361,7 +375,7 @@ int main(){
     Shader skyboxShader("shaders/skybox.vs", "shaders/skybox.fs");
 
 
-    //-----------------------------------------------------------WRITE ON SCREEN-------------------------------------------------------------------------
+    //-------------------------------WRITE ON SCREEN------------------------------------
     // FreeType
     // --------
     FT_Library ft;
@@ -428,7 +442,8 @@ int main(){
     // destroy FreeType once we're finished
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
-    //-----------------------------------------------------------WRITE ON SCREEN-------------------------------------------------------------------------
+    //-------------------------------WRITE ON SCREEN------------------------------------
+
 
     // configure VAO/VBO for texture quads for TEXT
     glGenVertexArrays(1, &textVAO);
@@ -486,12 +501,13 @@ int main(){
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
 
-    srand(time(0));
+    srand((int)time(0));
     nextOption = (rand() % 7);
     newPiece();
 
     moveThread = thread(movePieceDown);
     checkLineThread = thread(checkLine);
+
     //terminate(t);
 
     // render loop
@@ -502,7 +518,7 @@ int main(){
 
         // per-frame time logic
         // --------------------
-        float currentFrame = glfwGetTime();
+        float currentFrame = (float)glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
@@ -603,7 +619,7 @@ int main(){
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
-        glDepthFunc(GL_LESS); // set depth function back to default
+        //glDepthFunc(GL_LESS); // set depth function back to default
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -634,7 +650,7 @@ int main(){
     return 0;
 }
 
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void debugFunction() {
     printf("-------------------------------\n");
     printf("Current relative position: \n");
@@ -666,22 +682,19 @@ void debugFunction() {
 
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { 
-        threads = false;
-        moveThread.join();
-        checkLineThread.join();
-        glfwSetWindowShouldClose(window, true);
+        end();
     }
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime + 0.05);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.ProcessKeyboard(BACKWARD, deltaTime + 0.05);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.ProcessKeyboard(LEFT, deltaTime + 0.05);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.ProcessKeyboard(RIGHT, deltaTime + 0.05);
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camera.ProcessKeyboard(UPWARD, deltaTime + 0.05);
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime + 0.05);
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime + 0.05f);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.ProcessKeyboard(BACKWARD, deltaTime + 0.05f);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.ProcessKeyboard(LEFT, deltaTime + 0.05f);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.ProcessKeyboard(RIGHT, deltaTime + 0.05f);
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camera.ProcessKeyboard(UPWARD, deltaTime + 0.05f);
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime + 0.05f);
 
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
         if (mtx.try_lock()) {
@@ -734,41 +747,41 @@ void processInput(GLFWwindow* window)
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
-// ---------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // glfw: whenever the mouse moves, this callback is called
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (firstMouse)
     {
-        lastX = xpos;
-        lastY = ypos;
+        lastX = (float)xpos;
+        lastY = (float)ypos;
         firstMouse = false;
     }
 
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    float xoffset = (float)xpos - lastX;
+    float yoffset = lastY - (float)ypos; // reversed since y-coordinates go from bottom to top
 
-    lastX = xpos;
-    lastY = ypos;
+    lastX = (float)xpos;
+    lastY = (float)ypos;
 
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
-// ---------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    camera.ProcessMouseScroll(yoffset);
+    camera.ProcessMouseScroll((float)yoffset);
 }
 // utility function for loading a 2D texture from file
-// ---------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 unsigned int loadTexture(char const* path)
 {
     unsigned int textureID;
@@ -779,7 +792,7 @@ unsigned int loadTexture(char const* path)
     unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
     if (data)
     {
-        GLenum format;
+        GLenum format = 0;
         if (nrComponents == 1)
             format = GL_RED;
         else if (nrComponents == 3)
@@ -807,7 +820,7 @@ unsigned int loadTexture(char const* path)
     return textureID;
 }
 // render line of text
-// -------------------
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void RenderText(Shader& textShader, string text, float x, float y, float scale, glm::vec3 color)
 {
     // activate corresponding render state  
@@ -861,7 +874,7 @@ void RenderText(Shader& textShader, string text, float x, float y, float scale, 
 // -Y (bottom)
 // +Z (front) 
 // -Z (back)
-// -------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 unsigned int loadCubemap(vector<std::string> faces)
 {
     unsigned int textureID;
