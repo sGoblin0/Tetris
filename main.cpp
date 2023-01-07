@@ -37,6 +37,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 unsigned int loadTexture(const char* path);
 void RenderText(Shader& shader, string text, float x, float y, float scale, glm::vec3 color);
+unsigned int loadCubemap(vector<std::string> faces);
 
 // settings
 const unsigned int SCR_WIDTH = 1920; // escolham as vossa resoluçao de ecra !!!!!!!!!!!!!
@@ -63,8 +64,7 @@ float speed = 1.0f;
 int points = 0;
 
 //by comparing the next two variables, we can check if the piece number has changed
-
-int option = (rand() % 7), nextOption = (rand() % 7);
+int option, nextOption;
 
 //piece spawn position
 vec3 pieceSpawnPosition(4.0f,20.0f, 0.0f);
@@ -192,7 +192,6 @@ void wait() {
 }
 
 void newPiece() {
-    srand(time(0));
     option = nextOption; //choose random piece (0-6)
     nextOption = (rand() % 7);
 
@@ -359,7 +358,8 @@ int main(){
     // ------------------------------------
     Shader basicShader("shaders/pieces.vs", "shaders/pieces.fs");
     Shader textShader("shaders/text.vs", "shaders/text.fs");
-    
+    Shader skyboxShader("shaders/skybox.vs", "shaders/skybox.fs");
+
 
     //-----------------------------------------------------------WRITE ON SCREEN-------------------------------------------------------------------------
     // FreeType
@@ -430,8 +430,7 @@ int main(){
     FT_Done_FreeType(ft);
     //-----------------------------------------------------------WRITE ON SCREEN-------------------------------------------------------------------------
 
-    // configure VAO/VBO for texture quads
-    // -----------------------------------
+    // configure VAO/VBO for texture quads for TEXT
     glGenVertexArrays(1, &textVAO);
     glGenBuffers(1, &textVBO);
     glBindVertexArray(textVAO);
@@ -443,7 +442,7 @@ int main(){
     glBindVertexArray(0);
 
 
-    // set up vertex data (and buffer(s)) and configure vertex attributes
+    // configure VAO/VBO for texture quads for CUBE
     unsigned int cubeVBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
     glGenBuffers(1, &cubeVBO);
@@ -457,10 +456,38 @@ int main(){
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
+
+    // configure VAO/VBO for texture quads for SKY BOX
+    unsigned int skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+
+    vector<std::string> faces
+    {
+        "textures/rightSkyBox.jpg",
+        "textures/leftSkyBox.jpg",
+        "textures/topSkyBox.jpg",
+        "textures/botSkyBox.jpg",
+        "textures/frontSkyBox.jpg",
+        "textures/backSkyBox.jpg"
+    };
+    unsigned int cubemapTexture = loadCubemap(faces);
+
     unsigned int texture = loadTexture("textures/blockBW.png");
     basicShader.use();
-    basicShader.setInt("texture1", 1);
+    basicShader.setInt("texture1", 0);
 
+    skyboxShader.use();
+    skyboxShader.setInt("skybox", 0);
+
+    srand(time(0));
+    nextOption = (rand() % 7);
     newPiece();
 
     moveThread = thread(movePieceDown);
@@ -493,7 +520,7 @@ int main(){
         textShader.use();
         textShader.setMat4("projection", projection);
 
-        glActiveTexture(GL_TEXTURE1);
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(cubeVAO);
 
@@ -558,9 +585,26 @@ int main(){
                 glDrawArrays(GL_TRIANGLES, 0, 36);
             }
         }
+
         RenderText(textShader, "Record: " + to_string(record), 50.0f, (float)(SCR_HEIGHT) - 100, 1.5f, glm::vec3(0.0, 0.0f, 0.0f));
 
         RenderText(textShader, "Pontos: " + to_string(points), 50.0f, 50.0f, 1.5f, glm::vec3(0.0, 0.0f, 0.0f));
+
+
+        // draw skybox as last
+        glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
+        skyboxShader.use();
+        view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
+        skyboxShader.setMat4("view", view);
+        skyboxShader.setMat4("projection", projection);
+        // skybox cube
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+        glDepthFunc(GL_LESS); // set depth function back to default
+
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -574,6 +618,8 @@ int main(){
     glDeleteBuffers(1, &cubeVBO);
     glDeleteVertexArrays(1, &textVAO);
     glDeleteBuffers(1, &textVBO);
+    glDeleteVertexArrays(1, &skyboxVAO);
+    glDeleteBuffers(1, &skyboxVBO);
 
     // saves record
     if (points >= record) {
@@ -805,4 +851,46 @@ void RenderText(Shader& textShader, string text, float x, float y, float scale, 
     }
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+// loads a cubemap texture from 6 individual texture faces
+// order:
+// +X (right)
+// -X (left)
+// +Y (top)
+// -Y (bottom)
+// +Z (front) 
+// -Z (back)
+// -------------------------------------------------------
+unsigned int loadCubemap(vector<std::string> faces)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(false);
+
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
 }
