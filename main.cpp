@@ -81,7 +81,6 @@ int rotation[] = { 0,0 };
 
 thread moveThread;
 thread checkLineThread;
-thread gameOverThread;
 mutex mtx;
 
 
@@ -602,11 +601,7 @@ int main(){
             }
         }
 
-        RenderText(textShader, "Record: " + to_string(record), 50.0f, (float)(SCR_HEIGHT) - 100, 1.5f, glm::vec3(0.0, 0.0f, 0.0f));
-
-        RenderText(textShader, "Pontos: " + to_string(points), 50.0f, 50.0f, 1.5f, glm::vec3(0.0, 0.0f, 0.0f));
-
-
+       
         // draw skybox as last
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
@@ -620,6 +615,11 @@ int main(){
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
         //glDepthFunc(GL_LESS); // set depth function back to default
+
+
+        RenderText(textShader, "Record: " + to_string(record), 50.0f, (float)(SCR_HEIGHT)-100, 1.5f, glm::vec3(0.0, 0.0f, 0.0f));
+
+        RenderText(textShader, "Pontos: " + to_string(points), 50.0f, 50.0f, 1.5f, glm::vec3(0.0, 0.0f, 0.0f));
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -697,37 +697,19 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime + 0.05f);
 
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        if (mtx.try_lock()) {
-            tmpPiece.futurePosition.x -= speed;
-            //check if future position is valid (if creates collision)
-            checkColision();
-            mtx.unlock();
-            //this_thread::sleep_for(chrono::milliseconds(100));
-
-            wait();
-        }
+        tmpPiece.futurePosition.x -= speed;
+        checkColision();
+        wait();
     }
     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) { 
-        if (mtx.try_lock()) {
-            tmpPiece.futurePosition.x += speed;
-            //check if future position is valid (if creates collision)
-            checkColision();
-            mtx.unlock();
-            //this_thread::sleep_for(chrono::milliseconds(100));
-            
-            wait();
-        }
+        tmpPiece.futurePosition.x += speed;
+        checkColision();
+        wait();
     }
     if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        if (mtx.try_lock()) {
-            tmpPiece.futurePosition.y -= speed;
-            //check if future position is valid (if creates collision)
-            checkColision();
-            mtx.unlock();
-            
-
-            wait();
-        }
+        tmpPiece.futurePosition.y -= speed;
+        checkColision();
+        wait();
     }
     
     if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS && option != 2) { //clockwise (option 2 == cube, ergo no rotation)
@@ -743,7 +725,7 @@ void processInput(GLFWwindow* window)
         wait();
     }
 
-    //if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) { registerPiece(); wait(); }
+    //if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) { wait(); }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
