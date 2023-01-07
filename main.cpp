@@ -729,7 +729,10 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         gravityDelay = 1; 
         wait();
-        gravityDelay = 300;
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
+        gravityDelay = 300; 
+        wait();
     }
 }
 
