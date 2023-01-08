@@ -200,16 +200,7 @@ void rotationFunc(bool dir) { //dir == true -> counter clockwise
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void end() {
-    if (points >= record) {
-        fstream recordFile("record.txt");
-        recordFile << points;
-        recordFile.close();
-    }
-
     threads = false;
-    moveThread.join();
-    checkLineThread.join();
-    glfwSetWindowShouldClose(window, true);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -294,6 +285,8 @@ void checkLine() {
             if (complete == 10) {
                 printf("Line completed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
                 points++;
+                if (points > record) record = points;
+
                 moveOneRowDown(r);
                 r = -1; //restart
             }
@@ -642,6 +635,13 @@ int main(){
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVBO);
     
+    // save record
+    if (points >= record) {
+        fstream recordFile("record.txt");
+        recordFile << points;
+        recordFile.close();
+    }
+
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
@@ -684,6 +684,10 @@ void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { 
         end();
+        threads = false;
+        moveThread.join();
+        checkLineThread.join();
+        glfwSetWindowShouldClose(window, true);
     }
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.ProcessKeyboard(FORWARD, deltaTime + 0.05f);
