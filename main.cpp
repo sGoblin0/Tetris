@@ -45,7 +45,6 @@ const unsigned int SCR_HEIGHT = 1080;
 // window
 GLFWwindow* window;
 
-
 // camera
 Camera camera(vec3(5.5f, 11.0f, 30.0f));
 float lastX = SCR_WIDTH / 2.0f;
@@ -56,7 +55,6 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-
 //MVP
 mat4 projection = mat4(1.0f);
 mat4 view = mat4(1.0f);
@@ -65,6 +63,7 @@ mat4 model = mat4(1.0f);
 // helpful variables
 float speed = 1.0f;
 int points = 0;
+int record = 0;
 
 //by comparing the next two variables, we can check if the piece number has changed
 int option, nextOption;
@@ -107,7 +106,6 @@ map<GLchar, Character> Characters;
 unsigned int textVAO, textVBO;
 
 
-
 typedef struct PIECE{
     vec3 position = vec3(4.0f, 20.0f, 0.0f); // current cube position
     vec3 futurePosition = vec3(4.0f, 20.0f, 0.0f); //future cube position (after movement)
@@ -141,7 +139,6 @@ bool checkColision(bool rotation = false) {
     tmpPiece.position = tmpPiece.futurePosition; //no colision, piece moves for future location
     return false;
 }
-
  
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //to rotate the pieces, and apply the offsets if necessary
@@ -203,45 +200,51 @@ void rotationFunc(bool dir) { //dir == true -> counter clockwise
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void end() {
+    if (points >= record) {
+        fstream recordFile("record.txt");
+        recordFile << points;
+        recordFile.close();
+    }
+
     threads = false;
     moveThread.join();
     checkLineThread.join();
     glfwSetWindowShouldClose(window, true);
 }
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void wait() {
     glfwWaitEventsTimeout(0.7);
 }
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void newPiece() {
     option = nextOption; //choose random piece (0-6)
     nextOption = (rand() % 7);
 
-    for(unsigned int i = 0; i<4; i++) tmpPiece.coord[i] = allPieces[option][i];
+    for (unsigned int i = 0; i < 10; i++)
+        if (allPiecesInBoard[20][i] != -1)//-------------- GAME OVER
+            end();
+
+    for(unsigned int i = 0; i<4; i++) tmpPiece.coord[i] = allPieces[option][i]; // current piece
     tmpPiece.position = pieceSpawnPosition;
     tmpPiece.futurePosition = pieceSpawnPosition;
     tmpPiece.rot = 0;
 
     
-    for(unsigned int i = 0; i<4; i++) nextPiece.coord[i] = allPieces[nextOption][i];
+    for(unsigned int i = 0; i<4; i++) nextPiece.coord[i] = allPieces[nextOption][i]; // next piece
     nextPiece.position = pieceSpawnPosition;
     nextPiece.futurePosition = pieceSpawnPosition;
     nextPiece.rot = 0;
 
-    printf("new piece\n");
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //register the piece on the board (registers the index of the color of the cube)
 void registerPiece() {
-    //printf("register\n");
     for (unsigned int i = 0; i < 4; i++) { //for every cube of the piece
         vec2 sum = tmpPiece.position + tmpPiece.coord[i]; //coordenate of the cube
-
-        if (allPiecesInBoard[int(sum.y) - 1][int(sum.x) - 1] != -1) end(); ////-------------------------- GAME OVER
-
         allPiecesInBoard[int(sum.y) - 1][int(sum.x) - 1] = option;
-
     }
     newPiece();
 }
@@ -274,6 +277,7 @@ void moveOneRowDown(int row) {
         current_row++;
     }
 }
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void checkLine() {
     while (threads) {
@@ -297,6 +301,7 @@ void checkLine() {
         }
     }
 }
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void printMatrix() {
     printf("-----------------MATRIX--------------------\n");
@@ -307,9 +312,9 @@ void printMatrix() {
         printf("\n");
     }
 }
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 int main(){
-    int record = 0;
     fstream recordFile("record.txt");
     recordFile >> record; // gets the record value on the file
     recordFile.close();
@@ -636,14 +641,7 @@ int main(){
     glDeleteBuffers(1, &textVBO);
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVBO);
-
-    // saves record
-    if (points >= record) {
-        fstream recordFile("record.txt");
-        recordFile << points; 
-        recordFile.close();
-    }
-
+    
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
@@ -679,7 +677,6 @@ void debugFunction() {
     printf("-------------------------------------------------------\n");
     printMatrix();
 }
-
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -736,6 +733,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // glfw: whenever the mouse moves, this callback is called
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
@@ -762,6 +760,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll((float)yoffset);
 }
+
 // utility function for loading a 2D texture from file
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 unsigned int loadTexture(char const* path)
@@ -801,6 +800,7 @@ unsigned int loadTexture(char const* path)
 
     return textureID;
 }
+
 // render line of text
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void RenderText(Shader& textShader, string text, float x, float y, float scale, glm::vec3 color)
