@@ -230,6 +230,22 @@ void newPiece() {
 
 }
 
+
+
+void checkGameOver() {
+	for (unsigned int i = 0; i < 10; i++)
+		if (allPiecesInBoard[20][i] != -1) { 
+			printf("GAME OVER\n");
+            //fill allPiecesInBoard matrix with -1's
+            for (unsigned int r = 0; r < 21; r++) {
+                for (unsigned int c = 0; c < 10; c++) {
+                    allPiecesInBoard[r][c] = -1;
+                }
+            }
+            points = 0;
+		}
+}
+
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //register the piece on the board (registers the index of the color of the cube)
 void registerPiece() {
@@ -237,6 +253,7 @@ void registerPiece() {
         vec2 sum = tmpPiece.position + tmpPiece.coord[i]; //coordenate of the cube
         allPiecesInBoard[int(sum.y) - 1][int(sum.x) - 1] = option;
     }
+    checkGameOver();
     newPiece();
 }
 
@@ -285,7 +302,13 @@ void checkLine() {
             if (complete == 10) {
                 printf("Line completed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
                 points++;
-                if (points > record) record = points;
+                if (points > record) {
+                    record = points;
+                    fstream file;
+                    file.open("record.txt", 'w');
+					file << to_string(record);
+                    file.close();
+                } 
 
                 moveOneRowDown(r);
                 r = -1; //restart
@@ -314,7 +337,7 @@ int main(){
 
     
 
-    //fill allPiecesInBoard matrix with 0's
+    //fill allPiecesInBoard matrix with -1's
     for (unsigned int r = 0; r < 21; r++) { 
         for (unsigned int c = 0; c < 10; c++) {
             allPiecesInBoard[r][c] = -1;
@@ -336,8 +359,8 @@ int main(){
 
     // glfw window creation
     // --------------------
-    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
-    //window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
+    //window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
+    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
     if (window == NULL)
     {
         cout << "Failed to create GLFW window" << endl;
@@ -511,6 +534,10 @@ int main(){
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+
+        
+
+
         // //allow semi-random numbers
 
         // per-frame time logic
@@ -533,6 +560,8 @@ int main(){
         textShader.use();
         textShader.setMat4("projection", projection);
 
+
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(cubeVAO);
@@ -553,16 +582,16 @@ int main(){
         }
 
         //-----------------------------------------pieces-------------------------------------------------------
-        for (unsigned int i = 0; i < 4; i++){ // draw current piece
+        for (unsigned int i = 0; i < 4; i++) { // draw current piece
             basicShader.setVec3("color", allPiecesColors[option][0], allPiecesColors[option][1], allPiecesColors[option][2]);
 
             model = translate(mat4(1.0f), tmpPiece.position); //current position of the center piece
             model = translate(model, tmpPiece.coord[i]);//mount pieces together
-          
+
             basicShader.setMat4("model", model);
             //printf("%d\n", i);
             //printf("%f %f %f %f\n\n", model[0][0], model[0][1], model[1][0], model[1][1]);
-            
+
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
@@ -587,7 +616,7 @@ int main(){
                 int index = allPiecesInBoard[r][c]; //index of the color
                 //printf("%d %d %d\n", index, r, c);
                 basicShader.setVec3("color", allPiecesColors[index][0], allPiecesColors[index][1], allPiecesColors[index][2]);
-                vec3 pos = vec3(float(c+1), float(r+1), 0.0f);
+                vec3 pos = vec3(float(c + 1), float(r + 1), 0.0f);
                 model = translate(mat4(1.0f), pos); //current position of the center piece
                 //model = translate(model, tmpPiece.coord[i]);//mount pieces together
 
@@ -598,6 +627,8 @@ int main(){
                 glDrawArrays(GL_TRIANGLES, 0, 36);
             }
         }
+
+        
 
        
         // draw skybox as last
@@ -635,12 +666,7 @@ int main(){
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &skyboxVBO);
     
-    // save record
-    if (points >= record) {
-        fstream recordFile("record.txt");
-        recordFile << points;
-        recordFile.close();
-    }
+   
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -893,3 +919,6 @@ unsigned int loadCubemap(vector<std::string> faces)
 
     return textureID;
 }
+
+
+
