@@ -249,8 +249,20 @@ void registerPiece() {
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void movePieceDown() {
+    int gravity = 300;
     while (threads) {
+<<<<<<< Updated upstream
         this_thread::sleep_for(chrono::milliseconds(gravityDelay));
+=======
+
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            gravity = 1;
+            wait();
+        } else {
+            gravity = 300;
+        }
+        this_thread::sleep_for(chrono::milliseconds(gravity));
+>>>>>>> Stashed changes
         while(true){
             if (mtx.try_lock()) break;
         }
