@@ -28,7 +28,6 @@
 
 using namespace std;
 using namespace glm;
-int gravityDelay = 300
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -251,10 +250,6 @@ void registerPiece() {
 void movePieceDown() {
     int gravity = 300;
     while (threads) {
-<<<<<<< Updated upstream
-        this_thread::sleep_for(chrono::milliseconds(gravityDelay));
-=======
-
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
             gravity = 1;
             wait();
@@ -262,7 +257,6 @@ void movePieceDown() {
             gravity = 300;
         }
         this_thread::sleep_for(chrono::milliseconds(gravity));
->>>>>>> Stashed changes
         while(true){
             if (mtx.try_lock()) break;
         }
@@ -738,14 +732,6 @@ void processInput(GLFWwindow* window)
         wait();
     }
 
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        gravityDelay = 1; 
-        wait();
-    }
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
-        gravityDelay = 300; 
-        wait();
-    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
