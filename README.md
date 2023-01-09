@@ -7,5 +7,5 @@
 
 2.Press "Z" & "X" to change rotation
 
-3. Press Space to move piece all down
+3.Press Space to move piece all down
 
