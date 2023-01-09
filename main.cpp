@@ -250,8 +250,15 @@ void registerPiece() {
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void movePieceDown() {
+    int gravity = 300;
     while (threads) {
-        this_thread::sleep_for(chrono::milliseconds(300));
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            gravity = 1;
+            wait();
+        } else {
+            gravity = 300;
+        }
+        this_thread::sleep_for(chrono::milliseconds(gravity));
         while(true){
             if (mtx.try_lock()) break;
         }
@@ -742,7 +749,6 @@ void processInput(GLFWwindow* window)
         wait();
     }
 
-    //if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) { wait(); }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
