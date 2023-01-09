@@ -199,11 +199,6 @@ void rotationFunc(bool dir) { //dir == true -> counter clockwise
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void end() {
-    threads = false;
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void wait() {
     glfwWaitEventsTimeout(0.7);
 }
@@ -212,10 +207,6 @@ void wait() {
 void newPiece() {
     option = nextOption; //choose random piece (0-6)
     nextOption = (rand() % 7);
-
-    for (unsigned int i = 0; i < 10; i++)
-        if (allPiecesInBoard[20][i] != -1)//-------------- GAME OVER
-            end();
 
     for(unsigned int i = 0; i<4; i++) tmpPiece.coord[i] = allPieces[option][i]; // current piece
     tmpPiece.position = pieceSpawnPosition;
@@ -359,8 +350,8 @@ int main(){
 
     // glfw window creation
     // --------------------
-    //window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
-    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
+    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", glfwGetPrimaryMonitor(), NULL);
+    //window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Tetris 3D", NULL, NULL);
     if (window == NULL)
     {
         cout << "Failed to create GLFW window" << endl;
@@ -709,7 +700,6 @@ void debugFunction() {
 void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) { 
-        end();
         threads = false;
         moveThread.join();
         checkLineThread.join();
