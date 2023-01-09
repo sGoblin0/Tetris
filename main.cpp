@@ -249,12 +249,13 @@ void registerPiece() {
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+int gravity = 300;
+bool moveAllDown = false;
 void movePieceDown() {
-    int gravity = 300;
     while (threads) {
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            gravity = 1;
-            wait();
+        if (moveAllDown) {
+            printf("asdasd\n");
+            gravity = 0;
         } else {
             gravity = 300;
         }
@@ -266,7 +267,10 @@ void movePieceDown() {
         //gotLock = true;
         tmpPiece.futurePosition.y = tmpPiece.futurePosition.y - 1.0f;
         //printf("new position: %f %f\n", tmpPiece.futurePosition.x, tmpPiece.futurePosition.y);
-        if ((tmpPiece.position - tmpPiece.futurePosition == vec3(0.0f, 1.0f, 0.0f)) && checkColision()) registerPiece();
+        if ((tmpPiece.position - tmpPiece.futurePosition == vec3(0.0f, 1.0f, 0.0f)) && checkColision()) { 
+            registerPiece();
+            moveAllDown = false;
+        }
         mtx.unlock();
         gotLock = false;
     }
@@ -719,6 +723,11 @@ void processInput(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.ProcessKeyboard(RIGHT, deltaTime + 0.05f);
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camera.ProcessKeyboard(UPWARD, deltaTime + 0.05f);
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.ProcessKeyboard(DOWNWARD, deltaTime + 0.05f);
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        moveAllDown = true;
+        wait();
+    }
 
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
         tmpPiece.futurePosition.x -= speed;
